@@ -14,11 +14,20 @@
 
   // Current view state.
   const view = {
-    route: "home", // home | child | contexts | map | more
+    route: "home", // home | child | sheet | contexts | map | more
     childId: null,
     week: E.weekStart(new Date()),
     mapChildId: "eldest",
   };
+
+  // Active worksheet player (so we can detach its listener on route change).
+  let sheetPlayer = null;
+  function destroySheet() {
+    if (sheetPlayer) {
+      sheetPlayer.destroy();
+      sheetPlayer = null;
+    }
+  }
 
   const esc = (s) =>
     String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -139,6 +148,20 @@
       })
       .join("");
 
+    const best = S.getSheetBest(child.id, view.week);
+    const sheetCta = `<button class="sheet-cta" data-act="sheet" data-id="${child.id}" style="--kid:${child.colour};--kid-bg:${child.accent}">
+        <span class="sheet-cta-icon">✏️</span>
+        <span class="sheet-cta-main">
+          <span class="sheet-cta-title">This week's worksheet</span>
+          <span class="sheet-cta-sub">${
+            best
+              ? `Best: ${"⭐".repeat(best.stars)}${"☆".repeat(Math.max(0, best.total - best.stars))} — play again`
+              : "6 quick games, tailored to this week"
+          }</span>
+        </span>
+        <span class="sheet-cta-go">›</span>
+      </button>`;
+
     app.innerHTML = `
       <header class="child-hero" style="--kid:${child.colour};--kid-bg:${child.accent}">
         <button class="back" data-act="go" data-route="home">‹ Home</button>
@@ -153,6 +176,7 @@
         </div>
       </header>
       ${weekStrip()}
+      ${sheetCta}
       ${spotlight}
       <section class="section">
         <div class="section-head"><h2>This week's learning</h2><span class="muted">${p.done}/${p.total} done</span></div>
@@ -160,6 +184,20 @@
       </section>
       <div class="foot-hint"><button class="link" data-act="go" data-route="map">See ${esc(child.name)}'s full-year map ›</button></div>
     `;
+  }
+
+  // --- WORKSHEET ---------------------------------------------------------------
+  function renderSheet() {
+    const child = childById(view.childId) || D.CHILDREN[0];
+    app.innerHTML = `<div id="sheetHost" class="ws-root"></div>`;
+    sheetPlayer = window.SPARK_SHEETS.render(document.getElementById("sheetHost"), {
+      child,
+      week: view.week,
+      contexts: S.activeContexts().filter((c) => E.appliesTo(c, child)),
+      saveBest: (stars, total) => S.saveSheetResult(child.id, view.week, stars, total),
+      onFinish: () => {},
+      onExit: () => go("child"),
+    });
   }
 
   // --- CONTEXTS --------------------------------------------------------------
@@ -290,16 +328,18 @@
     nav.innerHTML = tabs
       .map(
         (t) =>
-          `<button class="tab ${view.route === t.r || (view.route === "child" && t.r === "home") ? "on" : ""}" data-act="go" data-route="${t.r}">
+          `<button class="tab ${view.route === t.r || ((view.route === "child" || view.route === "sheet") && t.r === "home") ? "on" : ""}" data-act="go" data-route="${t.r}">
             <span class="ti">${t.icon}</span><span class="tl">${t.label}</span></button>`
       )
       .join("");
   }
 
   function render() {
+    destroySheet();
     ({
       home: renderHome,
       child: renderChild,
+      sheet: renderSheet,
       contexts: renderContexts,
       map: renderMap,
       more: renderMore,
@@ -322,6 +362,9 @@
     else if (act === "child") {
       view.childId = el.dataset.id;
       go("child");
+    } else if (act === "sheet") {
+      view.childId = el.dataset.id;
+      go("sheet");
     } else if (act === "week") {
       const dir = parseInt(el.dataset.dir, 10);
       view.week = dir === 0 ? E.weekStart(new Date()) : E.addWeeks(view.week, dir);

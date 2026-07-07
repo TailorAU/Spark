@@ -22,6 +22,7 @@
         crosscountry: { active: true, raceDate: race.toISOString().slice(0, 10) },
       },
       done: {}, // key: `${childId}:${weekISO}:${areaId}` -> true
+      sheets: {}, // key: `${childId}:${weekISO}` -> { stars, total, at } (best result)
       settings: { apiBaseUrl: "" },
     };
   }
@@ -93,6 +94,23 @@
     return { done, total, pct: total ? Math.round((done / total) * 100) : 0 };
   }
 
+  function sheetKey(childId, week) {
+    return `${childId}:${weekKey(week)}`;
+  }
+
+  function getSheetBest(childId, week) {
+    return state.sheets[sheetKey(childId, week)] || null;
+  }
+
+  function saveSheetResult(childId, week, stars, total) {
+    const k = sheetKey(childId, week);
+    const prev = state.sheets[k];
+    if (!prev || stars > prev.stars) {
+      state.sheets[k] = { stars, total, at: new Date().toISOString() };
+      save();
+    }
+  }
+
   function setSetting(key, value) {
     state.settings[key] = value;
     save();
@@ -115,6 +133,8 @@
     isDone,
     toggleDone,
     weekProgress,
+    getSheetBest,
+    saveSheetResult,
     setSetting,
     getSetting,
     resetAll,
