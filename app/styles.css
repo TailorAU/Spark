@@ -199,6 +199,65 @@ button { font: inherit; cursor: pointer; border: none; background: none; color: 
 
 .ws-root { min-height: 70vh; }
 .ws-head { padding: 16px 4px 6px; }
+.ws-topline { display: flex; justify-content: space-between; align-items: center; }
+.ws-mute { font-size: 18px; padding: 4px 8px; border-radius: 10px; }
+.ws-mute:active { background: var(--line); }
+.ws-frame {
+  display: inline-block; font-size: 12px; font-weight: 800; letter-spacing: 0.03em;
+  color: var(--kid); background: color-mix(in srgb, var(--kid) 12%, transparent);
+  border-radius: 999px; padding: 4px 11px; margin: 2px 0 8px;
+}
+
+/* animated scene */
+.ws-scene {
+  position: relative; border-radius: 18px; overflow: hidden; margin: 4px 0 14px;
+  border: 1px solid var(--line); box-shadow: var(--shadow); aspect-ratio: 400 / 140;
+}
+.ws-scene > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.ws-spot {
+  position: absolute; transform: translate(-50%, -50%);
+  font-size: 30px; line-height: 1; padding: 6px; border-radius: 14px;
+  background: rgba(255, 255, 255, 0.28); backdrop-filter: blur(1px);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  animation: ws-bob 2.4s ease-in-out infinite;
+}
+.ws-spot:nth-child(odd) { animation-delay: -1.2s; }
+.ws-spot.hit { background: rgba(47, 158, 87, 0.55); border-color: #2f9e57; animation: none; }
+.ws-spot .ws-n { top: -10px; right: -8px; }
+.ws-spot-decor { pointer-events: none; }
+@keyframes ws-bob {
+  0%, 100% { transform: translate(-50%, -50%); }
+  50% { transform: translate(-50%, calc(-50% - 5px)); }
+}
+
+/* scene ambience */
+.sc-sun { animation: sc-glow 3s ease-in-out infinite; transform-origin: center; }
+@keyframes sc-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.75; } }
+.sc-cloud { animation: sc-drift 14s linear infinite alternate; }
+.sc-cloud2 { animation-duration: 18s; }
+@keyframes sc-drift { from { transform: translateX(-14px); } to { transform: translateX(22px); } }
+.sc-wave { animation: sc-swell 5s ease-in-out infinite alternate; }
+.sc-wave2 { animation-duration: 7s; }
+@keyframes sc-swell { from { transform: translateX(-8px); } to { transform: translateX(8px); } }
+.sc-star { animation: sc-twinkle 2.2s ease-in-out infinite; }
+.sc-star2 { animation-delay: -0.8s; }
+.sc-star3 { animation-delay: -1.5s; }
+@keyframes sc-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+.sc-flame { animation: sc-flicker 0.5s ease-in-out infinite alternate; transform-origin: 300px 118px; }
+@keyframes sc-flicker { from { transform: scale(1); } to { transform: scale(1.12, 0.94); } }
+.sc-runner { animation: sc-run 9s linear infinite; }
+@keyframes sc-run { from { transform: translateX(-170px); } to { transform: translateX(210px); } }
+.sc-kite { animation: ws-bob 3.4s ease-in-out infinite; }
+.sc-flagwave { transform-origin: 334px 60px; animation: sc-swell 3s ease-in-out infinite alternate; }
+@media (prefers-reduced-motion: reduce) {
+  .ws-spot, .sc-sun, .sc-cloud, .sc-wave, .sc-star, .sc-flame, .sc-runner, .sc-kite, .sc-flagwave, .ws-hop { animation: none !important; }
+}
+
+/* number line + picture hint */
+.ws-nline { width: 100%; max-width: 420px; display: block; margin: 4px auto 0; color: var(--ink); }
+.ws-hop { stroke-dasharray: 60; stroke-dashoffset: 60; animation: ws-hopdraw 0.5s ease forwards; animation-delay: calc(var(--hop) * 0.35s); }
+@keyframes ws-hopdraw { to { stroke-dashoffset: 0; } }
+.ws-pic { text-align: center; font-size: 56px; margin: 4px 0 2px; }
 .ws-dots { display: flex; gap: 6px; margin: 12px 0 14px; }
 .ws-dot {
   width: 26px; height: 26px; border-radius: 50%; flex: none;
