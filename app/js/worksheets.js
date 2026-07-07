@@ -97,35 +97,35 @@
   const THEMES = {
     fiji: {
       label: "Fiji adventure", emoji: "🏝️",
-      things: ["🐚", "🌺", "🐠", "🥥", "⛵"],
+      things: ["shell", "hibiscus", "fish", "coconut", "boat"],
       thing: "shells", one: "shell",
       words: ["FISH", "SAND", "BOAT", "SHELL"],
-      floaters: [["🥥", "coconut"], ["⛵", "toy boat"], ["🍃", "leaf"]],
-      sinkers: [["🪨", "rock"], ["🔑", "key"], ["🥄", "spoon"]],
+      floaters: [["coconut", "coconut"], ["boat", "toy boat"], ["leaf", "leaf"]],
+      sinkers: [["rock", "rock"], ["key", "key"], ["spoon", "spoon"]],
     },
     camping: {
       label: "Camping trip", emoji: "⛺",
-      things: ["🍡", "🌟", "🥾", "🌲", "🔥"],
+      things: ["marshmallow", "star", "boot", "pine", "campfire"],
       thing: "marshmallows", one: "marshmallow",
       words: ["TENT", "STAR", "CAMP", "FIRE"],
-      floaters: [["🍃", "leaf"], ["🪵", "stick"], ["🦆", "toy duck"]],
-      sinkers: [["🪨", "rock"], ["⛏️", "peg"], ["🥄", "spoon"]],
+      floaters: [["leaf", "leaf"], ["stick", "stick"], ["duck", "toy duck"]],
+      sinkers: [["rock", "rock"], ["peg", "tent peg"], ["spoon", "spoon"]],
     },
     crosscountry: {
       label: "Race day", emoji: "🏅",
-      things: ["👟", "🏅", "⏱️", "🚩", "💧"],
+      things: ["shoe", "medal", "stopwatch", "flag", "drop"],
       thing: "laps", one: "lap",
       words: ["RACE", "FAST", "JUMP", "TEAM"],
-      floaters: [["🍃", "leaf"], ["🦆", "toy duck"], ["⚽", "ball"]],
-      sinkers: [["🪨", "rock"], ["🔑", "key"], ["🥄", "spoon"]],
+      floaters: [["leaf", "leaf"], ["duck", "toy duck"], ["ball", "ball"]],
+      sinkers: [["rock", "rock"], ["key", "key"], ["spoon", "spoon"]],
     },
     everyday: {
       label: "Home adventure", emoji: "🏡",
-      things: ["🍎", "🧦", "🧸", "🥄", "📚"],
+      things: ["apple", "sock", "teddy", "spoon", "book"],
       thing: "apples", one: "apple",
       words: ["PLAY", "BOOK", "HOME", "JUMP"],
-      floaters: [["🍃", "leaf"], ["🦆", "toy duck"], ["🧽", "sponge"]],
-      sinkers: [["🪨", "rock"], ["🔑", "key"], ["🥄", "spoon"]],
+      floaters: [["leaf", "leaf"], ["duck", "toy duck"], ["sponge", "sponge"]],
+      sinkers: [["rock", "rock"], ["key", "key"], ["spoon", "spoon"]],
     },
   };
 
@@ -219,9 +219,10 @@
 
   // Slot positions (percent of the scene box) for scatter items — spread out,
   // kept in the lower two-thirds so they sit "in" the scene.
+  // Kept clear of the mascot (bottom-left) and basket (bottom-right) corners.
   const SLOTS = [
-    [11, 42], [30, 40], [50, 44], [70, 40], [89, 42],
-    [11, 76], [30, 78], [50, 74], [70, 78], [89, 76],
+    [12, 42], [30, 40], [48, 44], [66, 40], [84, 42],
+    [26, 78], [40, 74], [54, 78], [68, 74], [80, 78],
   ];
 
   function themesFor(child, contexts) {
@@ -261,10 +262,18 @@
   }
 
   const WORD_PIC = {
-    FISH: "🐟", SAND: "🏖️", BOAT: "⛵", SHELL: "🐚", TENT: "⛺", STAR: "⭐",
-    CAMP: "🏕️", FIRE: "🔥", RACE: "🏁", FAST: "💨", JUMP: "🦘", TEAM: "🤝",
-    PLAY: "🎈", BOOK: "📚", HOME: "🏠",
+    FISH: "fish", SAND: "sandcastle", BOAT: "boat", SHELL: "shell", TENT: "tent",
+    STAR: "star", CAMP: "tent", FIRE: "campfire", RACE: "flag", FAST: "shoe",
+    JUMP: "kangaroo", TEAM: "medal", PLAY: "ball", BOOK: "book", HOME: "house",
   };
+
+  // Render a game object: an illustrated sprite when we have one, else the
+  // literal glyph (letters, numerals, emoji faces stay as-is).
+  function draw(label, px) {
+    const ART = window.SPARK_ART;
+    if (ART && ART.has(label)) return ART.sprite(label, px);
+    return `<span class="ws-glyph">${esc(label)}</span>`;
+  }
 
   // A number line 0..20 with hop arcs — makes the sum visible.
   function numberLineSVG(from, delta) {
@@ -365,7 +374,7 @@
     const grid = shuffle(r,
       [L, L, L].map((x, i) => ({ label: x, match: true, pos: slots[i] }))
         .concat(wrongL.map((x, j) => ({ label: x, match: false, pos: slots[3 + j] }))));
-    qs.push(qTapAll("Letters", `${WORD_PIC[word] || th1.emoji} ${word[0]}${word.slice(1).toLowerCase()} starts with ${L}. Tap ALL the ${L}s!`, grid, th1, { scatter: true }));
+    qs.push(qTapAll("Letters", `${word[0]}${word.slice(1).toLowerCase()} starts with ${L}. Tap ALL the ${L}s!`, grid, th1, { scatter: true }));
 
     // 2 · Counting — count the things in the scene, pick the numeral.
     const th2 = t();
@@ -406,24 +415,29 @@
     return qs;
   }
 
-  function sheetEldest(r, themes) {
+  function sheetEldest(r, themes, skills) {
     const t = () => pick(r, themes);
+    const sk = skills || {};
     const qs = [];
 
     // 1 · Build the word from tiles (with a picture hint).
     const th1 = t();
     const w = pick(r, th1.words);
     const q1 = qBuild("English · phonics", "Build the word:", w, r, th1);
-    q1.visual = `<div class="ws-pic">${WORD_PIC[w] || th1.emoji}</div>`;
+    q1.visual = `<div class="ws-pic">${draw(WORD_PIC[w] || th1.emoji, 84)}</div>`;
     qs.push(q1);
 
-    // 2 · Addition within 20 — watch the hops on the number line.
+    // 2 · Addition — number range grows with the child's streak (level 0-2).
     const th2 = t();
-    const a = 4 + Math.floor(r() * 8), b = 2 + Math.floor(r() * 7);
-    qs.push(qChoice("Maths · addition",
+    const addLv = sk.add || 0;
+    const a = [2 + Math.floor(r() * 5), 4 + Math.floor(r() * 8), 7 + Math.floor(r() * 6)][addLv];
+    const b = [1 + Math.floor(r() * 4), 2 + Math.floor(r() * 7), 5 + Math.floor(r() * 4)][addLv];
+    const addQ = qChoice("Maths · addition",
       `You got ${a} ${th2.thing}, then ${b} more. How many altogether?`,
-      choiceOpts(r, a + b, [a + b - 1, a + b + 2]),
-      numberLineSVG(a, b) + `<div class="ws-sum">${a} + ${b} = <span class="ws-blank">?</span></div>`, th2));
+      choiceOpts(r, a + b, addLv === 2 ? [a + b - 1, a + b + 1] : [a + b - 1, a + b + 2]),
+      numberLineSVG(a, b) + `<div class="ws-sum">${a} + ${b} = <span class="ws-blank">?</span></div>`, th2);
+    addQ.skill = "add";
+    qs.push(addQ);
 
     // 3 · Missing number on the path to 100.
     const start = 10 + Math.floor(r() * 80);
@@ -431,13 +445,17 @@
       choiceOpts(r, start + 2, [start + 3, start + 1]),
       `<div class="ws-sum">${start}, ${start + 1}, <span class="ws-blank">?</span>, ${start + 3}</div>`, t()));
 
-    // 4 · Subtraction — hops backwards.
+    // 4 · Subtraction — hops backwards; range grows with level.
     const th4 = t();
-    const c2 = 9 + Math.floor(r() * 8), d = 2 + Math.floor(r() * 6);
-    qs.push(qChoice("Maths · subtraction",
+    const subLv = sk.sub || 0;
+    const c2 = [5 + Math.floor(r() * 5), 9 + Math.floor(r() * 8), 12 + Math.floor(r() * 7)][subLv];
+    const d = [1 + Math.floor(r() * 4), 2 + Math.floor(r() * 6), 5 + Math.floor(r() * 5)][subLv];
+    const subQ = qChoice("Maths · subtraction",
       `${c2} ${th4.thing}, then ${d} ${th4.id === "crosscountry" ? "done" : "gone"}. How many left?`,
       choiceOpts(r, c2 - d, [c2 - d + 1, c2 - d - 1].filter((x) => x >= 0)),
-      numberLineSVG(c2, -d) + `<div class="ws-sum">${c2} − ${d} = <span class="ws-blank">?</span></div>`, th4));
+      numberLineSVG(c2, -d) + `<div class="ws-sum">${c2} − ${d} = <span class="ws-blank">?</span></div>`, th4);
+    subQ.skill = "sub";
+    qs.push(subQ);
 
     // 5 · Read the clock.
     const hour = 1 + Math.floor(r() * 11);
@@ -458,12 +476,12 @@
     return qs;
   }
 
-  function buildSheet(child, week, contexts, attempt) {
+  function buildSheet(child, week, contexts, attempt, skills) {
     const weekKey = week.toISOString().slice(0, 10);
     const r = rng(`${child.id}:${weekKey}:${attempt || 0}`);
     const themes = themesFor(child, contexts);
     const gen = { eylf: sheetYoungest, kindy: sheetMiddle, year1: sheetEldest }[child.stage] || sheetYoungest;
-    return gen(r, themes);
+    return gen(r, themes, skills);
   }
 
   // --- player ---------------------------------------------------------------------
@@ -492,10 +510,53 @@
       GFX.burst(r.left + r.width / 2, r.top + r.height / 2, burstCols);
     }
 
+    const S = window.SPARK_STORE;
     function start() {
-      qs = buildSheet(child, week, contexts, attempt);
+      const skills = S && S.sheetSkills ? S.sheetSkills(child.id) : {};
+      qs = buildSheet(child, week, contexts, attempt, skills);
       idx = 0; stars = 0;
       next();
+    }
+
+    // --- Sparky mascot: reacts to the child, then settles back to idle.
+    let sparkyTimer = 0;
+    function setSparky(mood) {
+      const el = host.querySelector(".ws-sparky");
+      if (!el || !window.SPARK_ART) return;
+      el.innerHTML = window.SPARK_ART.sparky(mood, 58);
+      clearTimeout(sparkyTimer);
+      if (mood !== "idle") sparkyTimer = setTimeout(() => setSparky("idle"), mood === "cheer" ? 900 : 1100);
+    }
+
+    // --- Fly a visual clone from one rect to another (collect / place / sort).
+    function flyClone(fromEl, toEl, html, shrink) {
+      if (!fromEl || !toEl || !fromEl.animate) return;
+      const f = fromEl.getBoundingClientRect(), t = toEl.getBoundingClientRect();
+      const c = document.createElement("div");
+      c.className = "ws-fly";
+      c.innerHTML = html;
+      c.style.left = f.left + f.width / 2 + "px";
+      c.style.top = f.top + f.height / 2 + "px";
+      document.body.appendChild(c);
+      const dx = t.left + t.width / 2 - (f.left + f.width / 2);
+      const dy = t.top + t.height / 2 - (f.top + f.height / 2);
+      c.animate(
+        [
+          { transform: "translate(-50%,-50%) scale(1)" },
+          { transform: `translate(calc(-50% + ${dx * 0.5}px), calc(-50% + ${dy * 0.5 - 36}px)) scale(1.1)`, offset: 0.55 },
+          { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${shrink || 0.35})` },
+        ],
+        { duration: 480, easing: "cubic-bezier(.45,.05,.55,.95)" }
+      ).onfinish = () => c.remove();
+      setTimeout(() => c.remove(), 700);
+    }
+    function bumpBasket() {
+      const b = host.querySelector(".ws-basket");
+      if (b) {
+        b.classList.remove("bump");
+        void b.offsetWidth;
+        b.classList.add("bump");
+      }
     }
 
     function next() {
@@ -504,6 +565,8 @@
       state = {};
       paint();
     }
+
+    const hinting = () => mistakes >= 2;
 
     function dots() {
       return `<div class="ws-dots">${qs
@@ -515,18 +578,23 @@
     function sceneBlock(q, extraItems) {
       const th = q.theme;
       if (!th || !SCENES[th.id]) return "";
+      const hint = hinting();
       const spots = (q.scatter ? q.items : q.decor || [])
         .map((it, i) => {
           if (!it.pos) return "";
           const interactive = q.scatter;
           const hit = interactive && state.found && state.found.has(i);
-          const numBadge = q.countMode && hit ? `<span class="ws-n">${[...state.found].indexOf(i) + 1}</span>` : "";
+          const glyph = draw(it.label, 34);
           return interactive
-            ? `<button class="ws-spot ${hit ? "hit" : ""}" data-ws="tap" data-i="${i}" style="left:${it.pos[0]}%;top:${it.pos[1]}%">${esc(it.label)}${numBadge}</button>`
-            : `<span class="ws-spot ws-spot-decor" style="left:${it.pos[0]}%;top:${it.pos[1]}%">${esc(it.label)}</span>`;
+            ? `<button class="ws-spot ${hit ? "flown" : ""} ${hint && it.match && !hit ? "ws-hint" : ""}" data-ws="tap" data-i="${i}" style="left:${it.pos[0]}%;top:${it.pos[1]}%;--d:${i}">${glyph}</button>`
+            : `<span class="ws-spot ws-spot-decor" style="left:${it.pos[0]}%;top:${it.pos[1]}%;--d:${i}">${glyph}</span>`;
         })
         .join("");
-      return `<div class="ws-scene" data-theme="${esc(th.id)}">${SCENES[th.id]}${spots}${extraItems || ""}</div>`;
+      const basket = q.scatter
+        ? `<div class="ws-basket">${draw("basket", 44)}<span class="ws-basket-n">${state.found ? state.found.size : 0}</span></div>`
+        : "";
+      const mascot = window.SPARK_ART ? `<div class="ws-sparky">${window.SPARK_ART.sparky("idle", 58)}</div>` : "";
+      return `<div class="ws-scene" data-theme="${esc(th.id)}">${SCENES[th.id]}${spots}${basket}${mascot}${extraItems || ""}</div>`;
     }
 
     function head(q) {
@@ -547,9 +615,10 @@
       const q = qs[idx];
       let body = "";
       if (q.kind === "choice") {
+        const hint = hinting();
         body = `${sceneBlock(q)}${q.visual || ""}<div class="ws-opts">${q.options
           .map((o, i) =>
-            `<button class="ws-opt ${o.cls || ""} ${String(o.label).length > 4 ? "ws-txt" : ""}" data-ws="choice" data-i="${i}">${esc(o.label)}</button>`)
+            `<button class="ws-opt ${o.cls || ""} ${String(o.label).length > 4 ? "ws-txt" : ""} ${hint && o.correct ? "ws-hint" : ""}" data-ws="choice" data-i="${i}" style="--d:${i}">${esc(o.label)}</button>`)
           .join("")}</div>`;
       } else if (q.kind === "tapall") {
         state.found = state.found || new Set();
@@ -575,24 +644,29 @@
           .join("")}</div>
           <div class="ws-tiles">${q.tiles
             .map((tl, i) =>
-              `<button class="ws-tile ${state.used.has(i) ? "used" : ""}" data-ws="tile" data-i="${i}">${esc(tl)}</button>`)
+              `<button class="ws-tile ${state.used.has(i) ? "used" : ""} ${hinting() && !state.used.has(i) && tl === q.word[state.placed.length] ? "ws-hint" : ""}" data-ws="tile" data-i="${i}" style="--d:${i}">${esc(tl)}</button>`)
             .join("")}</div>`;
       } else if (q.kind === "sort") {
         state.at = state.at || 0;
         const it = q.items[state.at];
-        body = `${sceneBlock(q)}<div class="ws-sort-item">${esc(it.label)}<div class="ws-sort-name">${esc(it.name)}</div></div>
+        if (!it) return;
+        body = `${sceneBlock(q)}<div class="ws-sort-item">${draw(it.label, 84)}<div class="ws-sort-name">${esc(it.name)}</div></div>
           <div class="ws-buckets">${q.buckets
-            .map((b, i) => `<button class="ws-bucket" data-ws="bucket" data-i="${i}">${esc(b)}</button>`)
+            .map((b, i) => `<button class="ws-bucket ${hinting() && i === it.bucket ? "ws-hint" : ""}" data-ws="bucket" data-i="${i}" style="--d:${i}">${esc(b)}</button>`)
             .join("")}</div>
           <div class="ws-note">${state.at + 1} of ${q.items.length}</div>`;
       }
-      host.innerHTML = `${head(q)}<div class="ws-body">${body}</div>`;
+      // Entrance animations only on a question's first paint — repaints
+      // (collect/place/sort/hints) must not re-pop the remaining pieces.
+      host.innerHTML = `${head(q)}<div class="ws-body ${state.entered ? "ws-settled" : ""}">${body}</div>`;
+      state.entered = true;
       mountSceneFX();
     }
 
     function celebrate(el) {
       el.classList.add("pop");
       burstAt(el);
+      setSparky("cheer");
       FX.correct();
       setTimeout(() => advance(), 550);
     }
@@ -601,6 +675,7 @@
       const q = qs[idx];
       q.star = mistakes === 0;
       if (q.star) stars++;
+      if (q.skill && S && S.skillReport) S.skillReport(child.id, q.skill, q.star);
       idx++;
       next();
     }
@@ -608,8 +683,11 @@
     function wrong(el) {
       mistakes++;
       FX.wrong();
+      setSparky("oops");
       el.classList.add("shake");
       setTimeout(() => el.classList.remove("shake"), 400);
+      // Scaffold: from the second miss, light the correct path and let them win.
+      if (mistakes === 2) setTimeout(() => paint(), 420);
     }
 
     function finish() {
@@ -660,37 +738,46 @@
         const i = +el.dataset.i;
         if (state.found.has(i)) return;
         if (q.items[i].match) {
+          const html = draw(q.items[i].label, 34);
           state.found.add(i);
           burstAt(el);
+          setSparky("cheer");
           FX.tick();
+          const basketBefore = host.querySelector(".ws-basket");
+          if (basketBefore) flyClone(el, basketBefore, html);
+          paint();
+          bumpBasket();
           const total = q.items.filter((x) => x.match).length;
-          if (state.found.size >= total) {
-            paint();
-            setTimeout(() => advance(), 650);
-          } else paint();
+          if (state.found.size >= total) setTimeout(() => advance(), 700);
         } else wrong(el);
       } else if (act === "tile" && q.kind === "build") {
         const i = +el.dataset.i;
         if (state.used.has(i)) return;
         const needed = q.word[state.placed.length];
         if (q.tiles[i] === needed) {
+          const slot = host.querySelectorAll(".ws-slot")[state.placed.length];
+          if (slot) flyClone(el, slot, `<span class="ws-glyph ws-fly-letter">${esc(needed)}</span>`, 1);
           state.used.add(i);
           state.placed.push(needed);
           FX.tick();
           if (state.placed.length >= q.word.length) {
+            setSparky("cheer");
             paint();
-            setTimeout(() => advance(), 650);
+            setTimeout(() => advance(), 700);
           } else paint();
         } else wrong(el);
       } else if (act === "bucket" && q.kind === "sort") {
         const it = q.items[state.at];
         if (+el.dataset.i === it.bucket) {
+          const itemEl = host.querySelector(".ws-sort-item");
+          if (itemEl) flyClone(itemEl, el, draw(it.label, 64));
           state.at++;
+          setSparky("cheer");
           FX.tick();
           if (state.at >= q.items.length) {
             el.classList.add("right");
-            setTimeout(() => advance(), 450);
-          } else paint();
+            setTimeout(() => advance(), 500);
+          } else setTimeout(() => { if (qs[idx] === q && state.at < q.items.length) paint(); }, 260);
         } else wrong(el);
       }
     }

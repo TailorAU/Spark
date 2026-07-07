@@ -363,3 +363,81 @@ button { font: inherit; cursor: pointer; border: none; background: none; color: 
 
 /* text-length answer options (times, words) — readable size, no mid-word break */
 .ws-opt.ws-txt { font-size: 19px; line-height: 1.25; word-break: normal; overflow-wrap: normal; }
+
+/* --- worksheets v4: sprites, mascot, motion, scaffolding --- */
+.art { display: block; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.18)); }
+.ws-glyph { line-height: 1; }
+
+/* spring entrances (staggered by --d) */
+.ws-opt, .ws-tile, .ws-bucket, .ws-spot:not(.ws-spot-decor) {
+  animation: ws-enter 0.42s cubic-bezier(0.2, 1.4, 0.4, 1) backwards;
+  animation-delay: calc(var(--d, 0) * 60ms);
+}
+@keyframes ws-enter {
+  from { transform: scale(0.3); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.ws-spot:not(.ws-spot-decor) { animation-name: ws-enter-spot; }
+@keyframes ws-enter-spot {
+  from { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+.ws-opt:active, .ws-tile:active, .ws-bucket:active { transform: scale(0.94); }
+
+/* collected items leave the scene (they fly to the basket) */
+.ws-spot.flown { visibility: hidden; }
+.ws-spot { background: rgba(255, 255, 255, 0.4); border-color: rgba(255, 255, 255, 0.75); }
+
+/* the collection basket */
+.ws-basket {
+  position: absolute; right: 8px; bottom: 6px; z-index: 3;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+  pointer-events: none; /* display-only — taps must reach items beneath */
+}
+.ws-basket-n {
+  position: absolute; top: -7px; right: -7px; min-width: 24px; height: 24px;
+  background: #2f9e57; color: #fff; border-radius: 999px;
+  display: grid; place-items: center; font-size: 13px; font-weight: 800;
+  border: 2px solid #fff; padding: 0 4px;
+}
+.ws-basket.bump { animation: ws-bump 0.32s cubic-bezier(0.2, 1.6, 0.4, 1); }
+@keyframes ws-bump { 40% { transform: scale(1.22) rotate(-4deg); } }
+
+/* Sparky the mascot */
+.ws-sparky { position: absolute; left: 8px; bottom: 4px; z-index: 3; pointer-events: none; }
+.ws-sparky .sparky { display: block; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25)); }
+.sparky-idle { animation: sparky-bob 2.6s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes sparky-bob { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-4px) scale(1.02, 0.98); } }
+.sparky-cheer { animation: sparky-jump 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) 2; transform-origin: 50% 100%; }
+@keyframes sparky-jump { 35% { transform: translateY(-12px) scale(1.06, 0.94) rotate(-4deg); } 70% { transform: translateY(0) scale(0.96, 1.04); } }
+.sparky-oops { animation: sparky-wobble 0.55s ease 2; transform-origin: 50% 90%; }
+@keyframes sparky-wobble { 25% { transform: rotate(-7deg); } 75% { transform: rotate(7deg); } }
+.sparky-eye { animation: sparky-blink 3.4s infinite; transform-origin: center; }
+@keyframes sparky-blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
+
+/* flying clones (collect / place / sort) */
+.ws-fly {
+  position: fixed; z-index: 70; pointer-events: none;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.25));
+}
+.ws-fly-letter { font-size: 28px; font-weight: 800; }
+
+/* scaffolding hint — from the second miss, the correct path glows */
+.ws-hint { animation: ws-hint-pulse 1s ease-in-out infinite !important; }
+@keyframes ws-hint-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(242, 176, 30, 0); }
+  50% { box-shadow: 0 0 0 6px rgba(242, 176, 30, 0.45), 0 0 18px 4px rgba(242, 176, 30, 0.35); }
+}
+
+/* sprite sizing inside interaction surfaces */
+.ws-sort-item .art { margin: 0 auto; }
+.ws-pic .art { margin: 0 auto; }
+@media (prefers-reduced-motion: reduce) {
+  .ws-opt, .ws-tile, .ws-bucket, .ws-spot, .sparky-idle, .sparky-cheer, .sparky-oops, .ws-basket.bump, .ws-hint { animation: none !important; }
+  .ws-fly { display: none; }
+}
+
+/* repaints after the first render skip entrance animation */
+.ws-settled .ws-opt, .ws-settled .ws-tile, .ws-settled .ws-bucket, .ws-settled .ws-spot { animation: none; }
+.ws-settled .ws-spot { animation: ws-bob 2.4s ease-in-out infinite; }

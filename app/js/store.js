@@ -23,6 +23,7 @@
       },
       done: {}, // key: `${childId}:${weekISO}:${areaId}` -> true
       sheets: {}, // key: `${childId}:${weekISO}` -> { stars, total, at } (best result)
+      skills: {}, // key: `${childId}:${skill}` -> { lv, up, down } (adaptive difficulty)
       settings: { apiBaseUrl: "" },
     };
   }
@@ -111,6 +112,35 @@
     }
   }
 
+  // --- adaptive skill levels (0..2) -----------------------------------------
+  // Two perfect questions in a row level a skill up; two misses level it down.
+  function skillLevel(childId, key) {
+    const rec = state.skills[`${childId}:${key}`];
+    return rec ? rec.lv : 0;
+  }
+
+  function skillReport(childId, key, perfect) {
+    const k = `${childId}:${key}`;
+    const rec = state.skills[k] || { lv: 0, up: 0, down: 0 };
+    if (perfect) {
+      rec.up += 1;
+      rec.down = 0;
+      if (rec.up >= 2) { rec.lv = Math.min(2, rec.lv + 1); rec.up = 0; }
+    } else {
+      rec.up = 0;
+      rec.down += 1;
+      if (rec.down >= 2) { rec.lv = Math.max(0, rec.lv - 1); rec.down = 0; }
+    }
+    state.skills[k] = rec;
+    save();
+  }
+
+  // The skill-level snapshot the worksheet generator keys off (deterministic
+  // for a given store state — pass the SAME object when recomputing a sheet).
+  function sheetSkills(childId) {
+    return { add: skillLevel(childId, "add"), sub: skillLevel(childId, "sub") };
+  }
+
   function setSetting(key, value) {
     state.settings[key] = value;
     save();
@@ -135,6 +165,9 @@
     weekProgress,
     getSheetBest,
     saveSheetResult,
+    skillLevel,
+    skillReport,
+    sheetSkills,
     setSetting,
     getSetting,
     resetAll,
