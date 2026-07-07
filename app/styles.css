@@ -213,7 +213,14 @@ button { font: inherit; cursor: pointer; border: none; background: none; color: 
   position: relative; border-radius: 18px; overflow: hidden; margin: 4px 0 14px;
   border: 1px solid var(--line); box-shadow: var(--shadow); aspect-ratio: 400 / 140;
 }
-.ws-scene > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.ws-scene > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 1; }
+.ws-scene > .fx-scene { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.ws-scene.gl .sc-bg { display: none; }
+.ws-scene .ws-spot { z-index: 2; }
+.fx-overlay {
+  position: fixed; inset: 0; width: 100vw; height: 100vh;
+  pointer-events: none; z-index: 60;
+}
 .ws-spot {
   position: absolute; transform: translate(-50%, -50%);
   font-size: 30px; line-height: 1; padding: 6px; border-radius: 14px;
@@ -353,3 +360,6 @@ button { font: inherit; cursor: pointer; border: none; background: none; color: 
 /* toast */
 #toast { position: fixed; left: 50%; bottom: calc(84px + var(--safe-b)); transform: translateX(-50%) translateY(10px); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 40; }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* text-length answer options (times, words) — readable size, no mid-word break */
+.ws-opt.ws-txt { font-size: 19px; line-height: 1.25; word-break: normal; overflow-wrap: normal; }

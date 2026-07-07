@@ -138,12 +138,12 @@
             <stop offset="0" stop-color="#8fd3f4"/><stop offset="1" stop-color="#cfeffd"/>
           </linearGradient>
         </defs>
-        <rect width="400" height="140" fill="url(#skyF)"/>
-        <circle cx="340" cy="30" r="18" fill="#ffd54d" class="sc-sun"/>
-        <ellipse cx="60" cy="26" rx="26" ry="9" fill="#fff" opacity="0.85" class="sc-cloud"/>
-        <ellipse cx="88" cy="32" rx="18" ry="7" fill="#fff" opacity="0.7" class="sc-cloud sc-cloud2"/>
-        <path d="M0 88 Q40 78 80 88 T160 88 T240 88 T320 88 T400 88 V140 H0 Z" fill="#3fb0d8" class="sc-wave"/>
-        <path d="M0 100 Q50 92 100 100 T200 100 T300 100 T400 100 V140 H0 Z" fill="#2a8fc0" opacity="0.85" class="sc-wave sc-wave2"/>
+        <rect width="400" height="140" fill="url(#skyF)" class="sc-bg"/>
+        <circle cx="340" cy="30" r="18" fill="#ffd54d" class="sc-sun sc-bg"/>
+        <ellipse cx="60" cy="26" rx="26" ry="9" fill="#fff" opacity="0.85" class="sc-cloud sc-bg"/>
+        <ellipse cx="88" cy="32" rx="18" ry="7" fill="#fff" opacity="0.7" class="sc-cloud sc-cloud2 sc-bg"/>
+        <path d="M0 88 Q40 78 80 88 T160 88 T240 88 T320 88 T400 88 V140 H0 Z" fill="#3fb0d8" class="sc-wave sc-bg"/>
+        <path d="M0 100 Q50 92 100 100 T200 100 T300 100 T400 100 V140 H0 Z" fill="#2a8fc0" opacity="0.85" class="sc-wave sc-wave2 sc-bg"/>
         <ellipse cx="80" cy="122" rx="95" ry="26" fill="#f6dfa4"/>
         <path d="M64 96 Q60 66 78 52 M64 96 Q76 70 92 64 M64 96 Q52 72 40 68" stroke="#2f8f5b" stroke-width="5" fill="none" stroke-linecap="round"/>
         <rect x="60" y="92" width="8" height="26" rx="3" fill="#8a5a2b"/>
@@ -155,10 +155,10 @@
             <stop offset="0" stop-color="#1b2a52"/><stop offset="1" stop-color="#3b4a7a"/>
           </linearGradient>
         </defs>
-        <rect width="400" height="140" fill="url(#skyC)"/>
-        <circle cx="330" cy="28" r="14" fill="#f4f1de"/>
-        <circle cx="336" cy="24" r="14" fill="#1b2a52" opacity="0.55"/>
-        <g fill="#fff">
+        <rect width="400" height="140" fill="url(#skyC)" class="sc-bg"/>
+        <circle cx="330" cy="28" r="14" fill="#f4f1de" class="sc-bg"/>
+        <circle cx="336" cy="24" r="14" fill="#1b2a52" opacity="0.55" class="sc-bg"/>
+        <g fill="#fff" class="sc-bg">
           <circle cx="40" cy="24" r="2" class="sc-star"/>
           <circle cx="120" cy="16" r="2" class="sc-star sc-star2"/>
           <circle cx="200" cy="30" r="2" class="sc-star sc-star3"/>
@@ -168,7 +168,7 @@
         </g>
         <path d="M0 118 L60 84 L120 118 Z" fill="#243b2f"/>
         <path d="M330 118 L380 80 L400 118 Z" fill="#243b2f"/>
-        <rect y="112" width="400" height="28" fill="#2e4636"/>
+        <rect y="112" width="400" height="28" fill="#2e4636" class="sc-bg"/>
         <path d="M150 118 L200 66 L250 118 Z" fill="#e8833a"/>
         <path d="M186 118 L200 88 L214 118 Z" fill="#b85f1f"/>
         <g class="sc-flame">
@@ -184,12 +184,12 @@
             <stop offset="0" stop-color="#9fd8ef"/><stop offset="1" stop-color="#d9f1fb"/>
           </linearGradient>
         </defs>
-        <rect width="400" height="140" fill="url(#skyR)"/>
-        <circle cx="52" cy="30" r="15" fill="#ffd54d" class="sc-sun"/>
-        <ellipse cx="250" cy="26" rx="24" ry="8" fill="#fff" opacity="0.8" class="sc-cloud"/>
-        <path d="M0 96 Q100 74 200 92 T400 88 V140 H0 Z" fill="#69b96b"/>
-        <path d="M0 116 Q120 100 240 112 T400 110 V140 H0 Z" fill="#4d9e54"/>
-        <path d="M20 124 Q200 104 380 120" stroke="#e8e3d4" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="1 18" class="sc-track"/>
+        <rect width="400" height="140" fill="url(#skyR)" class="sc-bg"/>
+        <circle cx="52" cy="30" r="15" fill="#ffd54d" class="sc-sun sc-bg"/>
+        <ellipse cx="250" cy="26" rx="24" ry="8" fill="#fff" opacity="0.8" class="sc-cloud sc-bg"/>
+        <path d="M0 96 Q100 74 200 92 T400 88 V140 H0 Z" fill="#69b96b" class="sc-bg"/>
+        <path d="M0 116 Q120 100 240 112 T400 110 V140 H0 Z" fill="#4d9e54" class="sc-bg"/>
+        <path d="M20 124 Q200 104 380 120" stroke="#e8e3d4" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="1 18" class="sc-track sc-bg"/>
         <g class="sc-flagwave">
           <rect x="332" y="58" width="4" height="52" rx="2" fill="#7a4a1e"/>
           <path d="M336 60 L370 66 L336 74 Z" fill="#e34f4f"/>
@@ -203,10 +203,10 @@
             <stop offset="0" stop-color="#a5d8f3"/><stop offset="1" stop-color="#e2f3fc"/>
           </linearGradient>
         </defs>
-        <rect width="400" height="140" fill="url(#skyH)"/>
-        <circle cx="60" cy="30" r="16" fill="#ffd54d" class="sc-sun"/>
-        <ellipse cx="220" cy="24" rx="26" ry="9" fill="#fff" opacity="0.85" class="sc-cloud"/>
-        <rect y="112" width="400" height="28" fill="#7bc47f"/>
+        <rect width="400" height="140" fill="url(#skyH)" class="sc-bg"/>
+        <circle cx="60" cy="30" r="16" fill="#ffd54d" class="sc-sun sc-bg"/>
+        <ellipse cx="220" cy="24" rx="26" ry="9" fill="#fff" opacity="0.85" class="sc-cloud sc-bg"/>
+        <rect y="112" width="400" height="28" fill="#7bc47f" class="sc-bg"/>
         <rect x="150" y="66" width="90" height="50" rx="4" fill="#f2e3c6"/>
         <path d="M142 70 L195 38 L248 70 Z" fill="#d1603d"/>
         <rect x="186" y="88" width="18" height="28" rx="2" fill="#8a5a2b"/>
@@ -469,8 +469,28 @@
   // --- player ---------------------------------------------------------------------
   function render(host, opts) {
     const { child, week, contexts, onExit, onFinish, saveBest } = opts;
+    const GFX = window.SPARK_FX;
+    const burstCols = [child.colour, "#f2b01e", "#2f9e57", "#e8833a"];
     let attempt = 0;
     let qs, idx, mistakes, stars, state;
+    let sceneFX = null, confettiFX = null;
+
+    function killFX() {
+      if (sceneFX) { sceneFX.destroy(); sceneFX = null; }
+      if (confettiFX) { confettiFX.destroy(); confettiFX = null; }
+    }
+    // After painting, replace the SVG backdrop with the GPU scene when available.
+    function mountSceneFX() {
+      if (sceneFX) { sceneFX.destroy(); sceneFX = null; }
+      if (!GFX || !GFX.available) return;
+      const el = host.querySelector(".ws-scene[data-theme]");
+      if (el) sceneFX = GFX.scene(el, el.dataset.theme);
+    }
+    function burstAt(el) {
+      if (!GFX) return;
+      const r = el.getBoundingClientRect();
+      GFX.burst(r.left + r.width / 2, r.top + r.height / 2, burstCols);
+    }
 
     function start() {
       qs = buildSheet(child, week, contexts, attempt);
@@ -506,7 +526,7 @@
             : `<span class="ws-spot ws-spot-decor" style="left:${it.pos[0]}%;top:${it.pos[1]}%">${esc(it.label)}</span>`;
         })
         .join("");
-      return `<div class="ws-scene">${SCENES[th.id]}${spots}${extraItems || ""}</div>`;
+      return `<div class="ws-scene" data-theme="${esc(th.id)}">${SCENES[th.id]}${spots}${extraItems || ""}</div>`;
     }
 
     function head(q) {
@@ -529,7 +549,7 @@
       if (q.kind === "choice") {
         body = `${sceneBlock(q)}${q.visual || ""}<div class="ws-opts">${q.options
           .map((o, i) =>
-            `<button class="ws-opt ${o.cls || ""}" data-ws="choice" data-i="${i}">${esc(o.label)}</button>`)
+            `<button class="ws-opt ${o.cls || ""} ${String(o.label).length > 4 ? "ws-txt" : ""}" data-ws="choice" data-i="${i}">${esc(o.label)}</button>`)
           .join("")}</div>`;
       } else if (q.kind === "tapall") {
         state.found = state.found || new Set();
@@ -567,10 +587,12 @@
           <div class="ws-note">${state.at + 1} of ${q.items.length}</div>`;
       }
       host.innerHTML = `${head(q)}<div class="ws-body">${body}</div>`;
+      mountSceneFX();
     }
 
     function celebrate(el) {
       el.classList.add("pop");
+      burstAt(el);
       FX.correct();
       setTimeout(() => advance(), 550);
     }
@@ -591,12 +613,17 @@
     }
 
     function finish() {
+      if (sceneFX) { sceneFX.destroy(); sceneFX = null; }
       if (saveBest) saveBest(stars, qs.length);
       if (onFinish) onFinish(stars, qs.length);
       FX.fanfare();
-      const burst = range(14)
-        .map((i) => `<span class="ws-confetti" style="--i:${i}">${"🎉⭐✨🎈"[i % 4]}</span>`)
-        .join("");
+      const useFX = GFX && GFX.available && !GFX.reduced;
+      if (useFX) confettiFX = GFX.confetti(burstCols);
+      const burst = useFX
+        ? ""
+        : range(14)
+            .map((i) => `<span class="ws-confetti" style="--i:${i}">${"🎉⭐✨🎈"[i % 4]}</span>`)
+            .join("");
       host.innerHTML = `
         <div class="ws-end" style="--kid:${child.colour};--kid-bg:${child.accent}">
           <div class="ws-burst">${burst}</div>
@@ -616,8 +643,8 @@
       if (!el || !host.contains(el)) return;
       const act = el.dataset.ws;
       const q = qs[idx];
-      if (act === "exit") return onExit();
-      if (act === "again") { attempt++; return start(); }
+      if (act === "exit") { killFX(); return onExit(); }
+      if (act === "again") { attempt++; killFX(); return start(); }
       if (act === "mute") {
         FX.toggle();
         el.textContent = FX.isMuted() ? "🔇" : "🔊";
@@ -634,6 +661,7 @@
         if (state.found.has(i)) return;
         if (q.items[i].match) {
           state.found.add(i);
+          burstAt(el);
           FX.tick();
           const total = q.items.filter((x) => x.match).length;
           if (state.found.size >= total) {
@@ -669,7 +697,12 @@
 
     host.addEventListener("click", onTap);
     start();
-    return { destroy: () => host.removeEventListener("click", onTap) };
+    return {
+      destroy() {
+        killFX();
+        host.removeEventListener("click", onTap);
+      },
+    };
   }
 
   window.SPARK_SHEETS = { buildSheet, render };
