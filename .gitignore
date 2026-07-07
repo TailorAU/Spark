@@ -1,0 +1,7 @@
+# Spark — nothing to build; PWA is static. Ignore local/editor cruft only.
+.DS_Store
+node_modules/
+*.log
+.vscode/
+.idea/
+dist/

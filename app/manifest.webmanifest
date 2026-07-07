@@ -1,0 +1,15 @@
+{
+  "name": "Spark — family learning",
+  "short_name": "Spark",
+  "description": "Every week of your child's education, mapped to the Australian curriculum and tailored to real family life.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f5f1",
+  "theme_color": "#2f6f4f",
+  "icons": [
+    { "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icons/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
