@@ -17,50 +17,16 @@
   // specific named school. Ages and year levels are preserved: they're derived
   // from these representative DOBs against Queensland enrolment rules, so the
   // curriculum logic is unchanged. Swap these three for your own family locally.
-  const CHILDREN = [
-    {
-      id: "eldest",
-      name: "Eldest",
-      dob: "2019-11-15",
-      school: "Primary school",
-      schoolType: "Primary (Year 1)",
-      // Late-2019 birth -> Prep 2025 -> Year 1 in 2026 (QLD).
-      stage: "year1",
-      framework: "acv9",
-      colour: "#2f6f4f",
-      accent: "#e7f2ec",
-      emoji: "🏃",
-      note: "Cross country coming up — training on.",
-    },
-    {
-      id: "middle",
-      name: "Middle",
-      dob: "2021-09-15",
-      school: "Kindergarten",
-      schoolType: "Kindergarten (C&K)",
-      // Turns 4 in 2025 -> Kindergarten year 2026 (QLD).
-      stage: "kindy",
-      framework: "qklg",
-      colour: "#c9781f",
-      accent: "#fbeede",
-      emoji: "🌻",
-      note: "",
-    },
-    {
-      id: "youngest",
-      name: "Youngest",
-      dob: "2023-08-15",
-      school: "Preschool",
-      schoolType: "Early years (long day care)",
-      // Turns 3 in 2026 -> EYLF early years room.
-      stage: "eylf",
-      framework: "eylf",
-      colour: "#8a4b8f",
-      accent: "#f3e8f4",
-      emoji: "🌸",
-      note: "",
-    },
-  ];
+  // Child records are NOT shipped in source. They live encrypted in
+  // children.enc.json and are injected here by SPARK_AUTH after the family
+  // enters the password (see auth.js). Until then this is empty and the app
+  // shows the lock screen.
+  let CHILDREN = [];
+  function setChildren(arr) {
+    CHILDREN.length = 0;
+    (arr || []).forEach((c) => CHILDREN.push(c));
+    window.SPARK_DATA.CHILDREN = CHILDREN;
+  }
 
   // ---------------------------------------------------------------------------
   // Curriculum frameworks. Each framework is a list of "areas" (the spine we
@@ -172,7 +138,7 @@
     },
     {
       id: "crosscountry",
-      label: "Cross country training (Eldest)",
+      label: "Cross country training",
       emoji: "🏅",
       kind: "ongoing",
       childScope: ["eldest"],
@@ -212,6 +178,7 @@
 
   window.SPARK_DATA = {
     CHILDREN,
+    setChildren,
     FRAMEWORKS,
     CONTEXT_LIBRARY,
     CROSS_COUNTRY_PLAN,

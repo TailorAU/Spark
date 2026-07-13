@@ -285,7 +285,12 @@
         </div>
         <div class="card">
           <h3>About</h3>
-          <p>Spark maps each child's week to the Australian curriculum (EYLF, QKLG, Australian Curriculum v9) and tailors it to what your family is actually doing — bringing transparency to parenting. Single-family v1; seed children are anonymised (Eldest / Middle / Youngest) — swap in your own locally.</p>
+          <p>Spark maps each child's week to the Australian curriculum (EYLF, QKLG, Australian Curriculum v9) and tailors it to what your family is actually doing — bringing transparency to parenting. Your family's details are encrypted and unlocked with the family password; nothing readable is ever published.</p>
+        </div>
+        <div class="card">
+          <h3>Lock Spark</h3>
+          <p>Sign out on this device. You'll need the family password to open Spark again.</p>
+          <button class="btn ghost" id="lockBtn">Lock &amp; sign out</button>
         </div>
         <div class="card danger">
           <h3>Reset</h3>
@@ -300,6 +305,12 @@
       S.setSetting("apiBaseUrl", document.getElementById("apiBase").value.trim());
       toast("Saved");
     };
+    const lb = document.getElementById("lockBtn");
+    if (lb)
+      lb.onclick = () => {
+        if (window.SPARK_AUTH) window.SPARK_AUTH.lock();
+        location.reload();
+      };
     document.getElementById("resetBtn").onclick = () => {
       if (confirm("Reset all progress and life events?")) {
         S.resetAll();
@@ -410,9 +421,72 @@
     toastT = setTimeout(() => t.classList.remove("show"), 1600);
   }
 
+  // --- lock screen -----------------------------------------------------------
+  function renderLock(msg) {
+    nav.innerHTML = "";
+    app.innerHTML = `
+      <div class="lock">
+        <div class="lock-card">
+          <div class="lock-brand"><span class="spark-dot"></span> Spark</div>
+          <h1 class="lock-h">Family sign-in</h1>
+          <p class="lock-sub">Enter the family password to open Spark.</p>
+          <form id="lockForm" autocomplete="off">
+            <input class="lock-input" id="lockPw" type="password" inputmode="text"
+              placeholder="Password" aria-label="Family password" autocomplete="current-password" />
+            <label class="lock-remember"><input type="checkbox" id="lockRemember" checked /> Keep me signed in on this device</label>
+            <button class="btn lock-btn" id="lockGo" type="submit">Unlock</button>
+            <div class="lock-error ${msg ? "show" : ""}" id="lockErr">${esc(msg || "")}</div>
+          </form>
+          <div class="lock-foot">Your family's details are encrypted — they never leave this device readable.</div>
+        </div>
+      </div>`;
+    const form = document.getElementById("lockForm");
+    const pw = document.getElementById("lockPw");
+    const err = document.getElementById("lockErr");
+    setTimeout(() => pw.focus(), 60);
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("lockGo");
+      btn.disabled = true;
+      btn.textContent = "Unlocking…";
+      const kids = await window.SPARK_AUTH.unlock(pw.value, document.getElementById("lockRemember").checked);
+      if (kids && kids.length) {
+        boot();
+      } else {
+        btn.disabled = false;
+        btn.textContent = "Unlock";
+        err.textContent = "That password didn't work. Try again.";
+        err.classList.add("show");
+        const card = document.querySelector(".lock-card");
+        card.classList.remove("shake");
+        void card.offsetWidth;
+        card.classList.add("shake");
+        pw.select();
+      }
+    };
+  }
+
   // --- boot ------------------------------------------------------------------
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
   }
-  render();
+
+  function boot() {
+    view.route = "home";
+    render();
+  }
+
+  async function init() {
+    const AUTH = window.SPARK_AUTH;
+    // No vault configured (dev build) → run open, as before.
+    if (!AUTH || !(await AUTH.hasVault())) {
+      boot();
+      return;
+    }
+    const kids = await AUTH.tryRemembered();
+    if (kids && kids.length) boot();
+    else renderLock();
+  }
+
+  init();
 })();
