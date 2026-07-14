@@ -24,6 +24,7 @@
       done: {}, // key: `${childId}:${weekISO}:${areaId}` -> true
       sheets: {}, // key: `${childId}:${weekISO}` -> { stars, total, at } (best result)
       skills: {}, // key: `${childId}:${skill}` -> { lv, up, down } (adaptive difficulty)
+      mastery: {}, // key: `${childId}:${skillId}` -> { attempts, bestStars, total, mastered, at }
       settings: { apiBaseUrl: "" },
     };
   }
@@ -141,6 +142,28 @@
     return { add: skillLevel(childId, "add"), sub: skillLevel(childId, "sub") };
   }
 
+  // --- skill mastery (curriculum Learn surface) ------------------------------
+  function getSkillMastery(childId, skillId) {
+    return state.mastery[`${childId}:${skillId}`] || null;
+  }
+  function recordSkillResult(childId, skillId, stars, total) {
+    const k = `${childId}:${skillId}`;
+    const prev = state.mastery[k] || { attempts: 0, bestStars: 0, total, mastered: false };
+    const bestStars = Math.max(prev.bestStars || 0, stars);
+    const mastered = prev.mastered || (total > 0 && stars / total >= 0.8);
+    state.mastery[k] = { attempts: (prev.attempts || 0) + 1, bestStars, total, mastered, at: new Date().toISOString() };
+    save();
+    return state.mastery[k];
+  }
+  function masterySummary(childId, skillIds) {
+    let mastered = 0, started = 0;
+    for (const id of skillIds) {
+      const m = state.mastery[`${childId}:${id}`];
+      if (m) { started++; if (m.mastered) mastered++; }
+    }
+    return { mastered, started, total: skillIds.length };
+  }
+
   function setSetting(key, value) {
     state.settings[key] = value;
     save();
@@ -168,6 +191,9 @@
     skillLevel,
     skillReport,
     sheetSkills,
+    getSkillMastery,
+    recordSkillResult,
+    masterySummary,
     setSetting,
     getSetting,
     resetAll,

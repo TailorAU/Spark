@@ -1,5 +1,5 @@
 /* Spark service worker — offline-first app shell. */
-const CACHE = "spark-v6";
+const CACHE = "spark-v7";
 const ASSETS = [
   "./",
   "./index.html",
@@ -11,6 +11,8 @@ const ASSETS = [
   "./js/engine.js",
   "./js/store.js",
   "./js/sprites.js",
+  "./js/curriculum.js",
+  "./content.json",
   "./js/fx.js",
   "./js/worksheets.js",
   "./js/app.js",

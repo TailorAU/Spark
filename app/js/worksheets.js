@@ -486,12 +486,16 @@
 
   // --- player ---------------------------------------------------------------------
   function render(host, opts) {
-    const { child, week, contexts, onExit, onFinish, saveBest } = opts;
+    const { child, week, contexts, onExit, onFinish, saveBest, questions, lesson } = opts;
     const GFX = window.SPARK_FX;
     const burstCols = [child.colour, "#f2b01e", "#2f9e57", "#e8833a"];
+    const isLearn = Array.isArray(questions) && questions.length > 0;
     let attempt = 0;
+    let introShown = false;
+    let explainTimer = 0;
     let qs, idx, mistakes, stars, state;
     let sceneFX = null, confettiFX = null;
+    const clone = (o) => JSON.parse(JSON.stringify(o));
 
     function killFX() {
       if (sceneFX) { sceneFX.destroy(); sceneFX = null; }
@@ -512,10 +516,51 @@
 
     const S = window.SPARK_STORE;
     function start() {
-      const skills = S && S.sheetSkills ? S.sheetSkills(child.id) : {};
-      qs = buildSheet(child, week, contexts, attempt, skills);
+      if (isLearn) {
+        qs = questions.map(clone);
+      } else {
+        const skills = S && S.sheetSkills ? S.sheetSkills(child.id) : {};
+        qs = buildSheet(child, week, contexts, attempt, skills);
+      }
       idx = 0; stars = 0;
-      next();
+      if (isLearn && lesson && !introShown) renderIntro();
+      else next();
+    }
+
+    // --- Learn mode: a teaching intro card before the practice set.
+    function renderIntro() {
+      host.innerHTML = `
+        <div class="ws-lesson" style="--kid:${child.colour};--kid-bg:${child.accent}">
+          <div class="ws-topline"><button class="back" data-ws="exit">‹ ${esc(child.name)}</button></div>
+          ${window.SPARK_ART ? `<div class="ws-lesson-sparky">${window.SPARK_ART.sparky("cheer", 72)}</div>` : ""}
+          ${lesson.area ? `<div class="ws-frame">${esc(lesson.area)}</div>` : ""}
+          <h1 class="ws-lesson-h">${esc(lesson.title)}</h1>
+          <p class="ws-lesson-intro">${esc(lesson.intro)}</p>
+          ${lesson.example ? `<div class="ws-lesson-eg"><b>Let's see:</b> ${esc(lesson.example)}</div>` : ""}
+          ${lesson.milestone ? `<div class="ws-lesson-goal">🎯 ${esc(lesson.milestone)}</div>` : ""}
+          <button class="btn ws-lesson-go" data-ws="startset">Let's practise →</button>
+          ${lesson.curriculumCode ? `<div class="ws-lesson-code">${esc(lesson.curriculumCode)}</div>` : ""}
+        </div>`;
+    }
+
+    // Route a solved question through the teaching explanation (Learn) or straight on.
+    function solved() {
+      const q = qs[idx];
+      if (isLearn && q && q.explanation) showExplain(q);
+      else advance();
+    }
+    function showExplain(q) {
+      setSparky("cheer");
+      const body = host.querySelector(".ws-body");
+      if (!body) return advance();
+      const card = document.createElement("div");
+      card.className = "ws-explain";
+      card.innerHTML = `<div class="ws-explain-in"><span class="ws-explain-i">💡</span><div>${esc(q.explanation)}</div>
+        <button class="btn ws-explain-next" data-ws="explnext">Next →</button></div>`;
+      body.appendChild(card);
+      requestAnimationFrame(() => card.classList.add("show"));
+      clearTimeout(explainTimer);
+      explainTimer = setTimeout(() => advance(), 3200);
     }
 
     // --- Sparky mascot: reacts to the child, then settles back to idle.
@@ -605,8 +650,8 @@
             <button class="ws-mute" data-ws="mute" aria-label="Toggle sound">${FX.isMuted() ? "🔇" : "🔊"}</button>
           </div>
           ${dots()}
-          ${th ? `<div class="ws-frame">${th.emoji} ${esc(th.label)}</div>` : ""}
-          <div class="ws-area">${esc(q.area)}</div>
+          ${isLearn && lesson ? `<div class="ws-frame">📚 ${esc(lesson.title)}</div>` : (th ? `<div class="ws-frame">${th.emoji} ${esc(th.label)}</div>` : "")}
+          <div class="ws-area">${esc(q.area || (isLearn && lesson ? lesson.area : ""))}</div>
           <div class="ws-prompt">${q.prompt ? esc(q.prompt) : ""}</div>
         </div>`;
     }
@@ -658,7 +703,8 @@
       }
       // Entrance animations only on a question's first paint — repaints
       // (collect/place/sort/hints) must not re-pop the remaining pieces.
-      host.innerHTML = `${head(q)}<div class="ws-body ${state.entered ? "ws-settled" : ""}">${body}</div>`;
+      const hintBanner = hinting() && q.hint ? `<div class="ws-hintbar">💡 ${esc(q.hint)}</div>` : "";
+      host.innerHTML = `${head(q)}${hintBanner}<div class="ws-body ${state.entered ? "ws-settled" : ""}">${body}</div>`;
       state.entered = true;
       mountSceneFX();
     }
@@ -668,10 +714,11 @@
       burstAt(el);
       setSparky("cheer");
       FX.correct();
-      setTimeout(() => advance(), 550);
+      setTimeout(() => solved(), 550);
     }
 
     function advance() {
+      clearTimeout(explainTimer);
       const q = qs[idx];
       q.star = mistakes === 0;
       if (q.star) stars++;
@@ -728,6 +775,8 @@
         el.textContent = FX.isMuted() ? "🔇" : "🔊";
         return;
       }
+      if (act === "startset") { introShown = true; return next(); }
+      if (act === "explnext") { clearTimeout(explainTimer); return advance(); }
       if (!q) return;
 
       if (act === "choice" && q.kind === "choice") {
@@ -748,7 +797,7 @@
           paint();
           bumpBasket();
           const total = q.items.filter((x) => x.match).length;
-          if (state.found.size >= total) setTimeout(() => advance(), 700);
+          if (state.found.size >= total) setTimeout(() => solved(), 700);
         } else wrong(el);
       } else if (act === "tile" && q.kind === "build") {
         const i = +el.dataset.i;
@@ -763,7 +812,7 @@
           if (state.placed.length >= q.word.length) {
             setSparky("cheer");
             paint();
-            setTimeout(() => advance(), 700);
+            setTimeout(() => solved(), 700);
           } else paint();
         } else wrong(el);
       } else if (act === "bucket" && q.kind === "sort") {
@@ -776,7 +825,7 @@
           FX.tick();
           if (state.at >= q.items.length) {
             el.classList.add("right");
-            setTimeout(() => advance(), 500);
+            setTimeout(() => solved(), 500);
           } else setTimeout(() => { if (qs[idx] === q && state.at < q.items.length) paint(); }, 260);
         } else wrong(el);
       }

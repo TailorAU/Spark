@@ -466,3 +466,58 @@ button { font: inherit; cursor: pointer; border: none; background: none; color: 
 .lock-foot { color: var(--muted); font-size: 11.5px; margin-top: 18px; line-height: 1.5; }
 .lock-card.shake { animation: ws-shake 0.4s ease; }
 @media (prefers-reduced-motion: reduce) { .lock-card.shake { animation: none; } }
+
+/* --- Learn: curriculum mastery map --- */
+.learn-cta { margin-top: 10px; }
+.skill-list { display: flex; flex-direction: column; gap: 10px; }
+.skill-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  padding: 13px 14px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+}
+.skill-row::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--kid); opacity: 0.5; }
+.skill-row.is-mastered::before { opacity: 1; }
+.skill-row:active { transform: scale(0.995); }
+.skill-tick {
+  width: 26px; height: 26px; flex: none; border-radius: 8px; display: grid; place-items: center;
+  border: 2px solid var(--kid); color: #fff; font-weight: 800; font-size: 14px;
+}
+.skill-row.is-mastered .skill-tick { background: var(--kid); }
+.skill-main { flex: 1; min-width: 0; }
+.skill-title { display: block; font-weight: 700; font-size: 15px; }
+.skill-milestone { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.skill-badge { flex: none; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 4px 9px; }
+.skill-badge.mastered { color: #fff; background: var(--kid, var(--brand)); }
+.skill-badge.started { color: #f2b01e; letter-spacing: -1px; }
+.skill-badge.new { color: var(--muted); background: var(--line); }
+
+/* --- Learn: lesson intro card --- */
+.ws-lesson { padding: 18px 6px 8px; text-align: center; }
+.ws-lesson .ws-topline { text-align: left; }
+.ws-lesson-sparky { display: flex; justify-content: center; margin: 6px 0 2px; }
+.ws-lesson-sparky .sparky { filter: drop-shadow(0 3px 5px rgba(0,0,0,.2)); animation: sparky-bob 2.6s ease-in-out infinite; transform-origin: 50% 90%; }
+.ws-lesson-h { font-family: inherit; font-size: 24px; margin-top: 6px; }
+.ws-lesson-intro { font-size: 16px; color: var(--ink); max-width: 42ch; margin: 12px auto 0; line-height: 1.5; }
+.ws-lesson-eg { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin: 16px auto 0; max-width: 44ch; font-size: 14.5px; color: var(--ink-mid, var(--ink)); box-shadow: var(--shadow); text-align: left; }
+.ws-lesson-goal { font-size: 13px; color: var(--muted); margin: 14px auto 0; max-width: 40ch; }
+.ws-lesson-go { margin: 20px auto 0; padding: 14px 26px; font-size: 16px; }
+.ws-lesson-code { font-family: ui-monospace, Menlo, monospace; font-size: 10.5px; color: var(--muted); margin-top: 16px; letter-spacing: .02em; }
+
+/* --- hint bar (shown from the 2nd miss) --- */
+.ws-hintbar {
+  background: color-mix(in srgb, #f2b01e 16%, var(--card)); border: 1px solid color-mix(in srgb, #f2b01e 40%, var(--line));
+  color: var(--ink); border-radius: 12px; padding: 10px 13px; margin: 0 0 12px; font-size: 14px; font-weight: 600;
+}
+
+/* --- explanation card (the teaching moment) --- */
+.ws-explain { margin-top: 14px; opacity: 0; transform: translateY(8px); transition: all .25s ease; }
+.ws-explain.show { opacity: 1; transform: translateY(0); }
+.ws-explain-in {
+  display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap;
+  background: color-mix(in srgb, #2f9e57 12%, var(--card)); border: 1px solid color-mix(in srgb, #2f9e57 35%, var(--line));
+  border-radius: 14px; padding: 14px; box-shadow: var(--shadow); font-size: 15px; line-height: 1.5;
+}
+.ws-explain-i { font-size: 20px; }
+.ws-explain-next { margin-left: auto; padding: 9px 16px; font-size: 14px; }
+.ws-pic-emoji { font-size: 60px; line-height: 1; }
+@media (prefers-reduced-motion: reduce) { .ws-explain { transition: none; } .ws-lesson-sparky .sparky { animation: none; } }

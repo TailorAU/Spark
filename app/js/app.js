@@ -162,6 +162,23 @@
         <span class="sheet-cta-go">›</span>
       </button>`;
 
+    // Learning-journey CTA (curriculum mastery map).
+    let learnCta = "";
+    const LEARN = window.SPARK_LEARN;
+    if (LEARN && LEARN.has()) {
+      const areas = LEARN.childAreas(child.id);
+      const allSkills = areas.reduce((n, a) => n.concat(a.skills.map((s) => s.skillId)), []);
+      const ms = S.masterySummary(child.id, allSkills);
+      learnCta = `<button class="sheet-cta learn-cta" data-act="learn" data-id="${child.id}" style="--kid:${child.colour};--kid-bg:${child.accent}">
+        <span class="sheet-cta-icon">📚</span>
+        <span class="sheet-cta-main">
+          <span class="sheet-cta-title">Learning journey</span>
+          <span class="sheet-cta-sub">${ms.mastered} of ${ms.total} skills mastered · ${esc(D.FRAMEWORKS[child.framework].label)}</span>
+        </span>
+        <span class="sheet-cta-go">›</span>
+      </button>`;
+    }
+
     app.innerHTML = `
       <header class="child-hero" style="--kid:${child.colour};--kid-bg:${child.accent}">
         <button class="back" data-act="go" data-route="home">‹ Home</button>
@@ -177,6 +194,7 @@
       </header>
       ${weekStrip()}
       ${sheetCta}
+      ${learnCta}
       ${spotlight}
       <section class="section">
         <div class="section-head"><h2>This week's learning</h2><span class="muted">${p.done}/${p.total} done</span></div>
@@ -197,6 +215,66 @@
       saveBest: (stars, total) => S.saveSheetResult(child.id, view.week, stars, total),
       onFinish: () => {},
       onExit: () => go("child"),
+    });
+  }
+
+  // --- LEARN (curriculum mastery map) -----------------------------------------
+  function renderLearn() {
+    const child = childById(view.childId) || D.CHILDREN[0];
+    const LEARN = window.SPARK_LEARN;
+    const areas = LEARN && LEARN.has() ? LEARN.childAreas(child.id) : [];
+    const areaHtml = areas.map((a) => {
+      const rows = a.skills.map((sk) => {
+        const m = S.getSkillMastery(child.id, sk.skillId);
+        const badge = m && m.mastered
+          ? `<span class="skill-badge mastered">★ Mastered</span>`
+          : m
+            ? `<span class="skill-badge started">${"⭐".repeat(m.bestStars)}${"☆".repeat(Math.max(0, m.total - m.bestStars))}</span>`
+            : `<span class="skill-badge new">New</span>`;
+        return `<button class="skill-row ${m && m.mastered ? "is-mastered" : ""}" data-act="practice" data-id="${child.id}" data-skill="${sk.skillId}" style="--kid:${child.colour}">
+          <span class="skill-tick">${m && m.mastered ? "✓" : ""}</span>
+          <span class="skill-main">
+            <span class="skill-title">${esc(sk.title)}</span>
+            <span class="skill-milestone">${esc(sk.milestone)}</span>
+          </span>
+          ${badge}
+        </button>`;
+      }).join("");
+      return `<section class="section">
+        <div class="section-head"><h2>${esc(a.areaLabel)}</h2></div>
+        <div class="skill-list">${rows}</div>
+      </section>`;
+    }).join("");
+
+    app.innerHTML = `
+      <header class="child-hero" style="--kid:${child.colour};--kid-bg:${child.accent}">
+        <button class="back" data-act="child" data-id="${child.id}">‹ ${esc(child.name)}</button>
+        <div class="child-hero-row">
+          <div class="child-emoji">${child.emoji}</div>
+          <div>
+            <div class="child-name">Learning journey</div>
+            <div class="child-meta">${esc(D.FRAMEWORKS[child.framework].long)}</div>
+          </div>
+        </div>
+      </header>
+      ${areas.length ? areaHtml : `<div class="foot-hint">Learning content is loading…</div>`}
+      <div class="foot-hint">Every skill is mapped to ${esc(D.FRAMEWORKS[child.framework].label)}. Tap one to learn and practise.</div>
+    `;
+  }
+
+  // --- PRACTICE (a skill's lesson + question set) -----------------------------
+  function renderPractice() {
+    const child = childById(view.childId) || D.CHILDREN[0];
+    const LEARN = window.SPARK_LEARN;
+    const set = LEARN && LEARN.has() ? LEARN.practice(child.id, view.skillId) : null;
+    if (!set) { go("learn"); return; }
+    app.innerHTML = `<div id="sheetHost" class="ws-root"></div>`;
+    sheetPlayer = window.SPARK_SHEETS.render(document.getElementById("sheetHost"), {
+      child,
+      questions: set.questions,
+      lesson: set.lesson,
+      onFinish: (stars, total) => S.recordSkillResult(child.id, view.skillId, stars, total),
+      onExit: () => go("learn"),
     });
   }
 
@@ -339,7 +417,7 @@
     nav.innerHTML = tabs
       .map(
         (t) =>
-          `<button class="tab ${view.route === t.r || ((view.route === "child" || view.route === "sheet") && t.r === "home") ? "on" : ""}" data-act="go" data-route="${t.r}">
+          `<button class="tab ${view.route === t.r || ((view.route === "child" || view.route === "sheet" || view.route === "learn" || view.route === "practice") && t.r === "home") ? "on" : ""}" data-act="go" data-route="${t.r}">
             <span class="ti">${t.icon}</span><span class="tl">${t.label}</span></button>`
       )
       .join("");
@@ -351,6 +429,8 @@
       home: renderHome,
       child: renderChild,
       sheet: renderSheet,
+      learn: renderLearn,
+      practice: renderPractice,
       contexts: renderContexts,
       map: renderMap,
       more: renderMore,
@@ -376,6 +456,13 @@
     } else if (act === "sheet") {
       view.childId = el.dataset.id;
       go("sheet");
+    } else if (act === "learn") {
+      view.childId = el.dataset.id;
+      go("learn");
+    } else if (act === "practice") {
+      view.childId = el.dataset.id;
+      view.skillId = el.dataset.skill;
+      go("practice");
     } else if (act === "week") {
       const dir = parseInt(el.dataset.dir, 10);
       view.week = dir === 0 ? E.weekStart(new Date()) : E.addWeeks(view.week, dir);
@@ -477,6 +564,7 @@
   }
 
   async function init() {
+    if (window.SPARK_LEARN) { try { await window.SPARK_LEARN.ready(); } catch (_) {} }
     const AUTH = window.SPARK_AUTH;
     // No vault configured (dev build) → run open, as before.
     if (!AUTH || !(await AUTH.hasVault())) {
