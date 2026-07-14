@@ -1,0 +1,70 @@
+# Spark — nightly worksheet auto-print.
+# Renders the day's tailored pack (one A4 page per child) and emails it to a
+# printer's email-print address so it prints overnight. Runs against the live
+# site, so it always uses the deployed app + content.
+#
+# Setup (one-time) — repo Settings → Secrets and variables → Actions → New secret:
+#   SPARK_VAULT_PW   the family password (decrypts the vault in the browser)
+#   PRINTER_EMAIL    your printer's email-print address (HP ePrint / Epson / Brother)
+#   SMTP_HOST        e.g. smtp.gmail.com
+#   SMTP_PORT        587 (or 465)
+#   SMTP_USER        the sending mailbox (e.g. you@gmail.com)
+#   SMTP_PASS        an app password for that mailbox
+#   FROM_EMAIL       (optional) defaults to SMTP_USER
+# If SPARK_VAULT_PW is unset the job exits cleanly (no-op) so it never spams failures.
+name: Nightly worksheet print
+
+on:
+  schedule:
+    - cron: "30 18 * * *" # 04:30 Australia/Brisbane (AEST) — prints for that morning
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Date to print (YYYY-MM-DD). Blank = today (Brisbane)."
+        required: false
+
+jobs:
+  print:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check configuration
+        id: cfg
+        run: |
+          if [ -z "${{ secrets.SPARK_VAULT_PW }}" ]; then
+            echo "SPARK_VAULT_PW not set — skipping (configure secrets to enable overnight print)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install deps
+        if: steps.cfg.outputs.ready == 'true'
+        working-directory: tools
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Render + email pack
+        if: steps.cfg.outputs.ready == 'true'
+        working-directory: tools
+        env:
+          SPARK_VAULT_PW: ${{ secrets.SPARK_VAULT_PW }}
+          PRINTER_EMAIL: ${{ secrets.PRINTER_EMAIL }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
+          DATE: ${{ github.event.inputs.date }}
+          OUT: spark-pack.pdf
+        run: node render-and-email.mjs
+      - name: Upload PDF artifact
+        if: steps.cfg.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: spark-pack
+          path: tools/spark-pack.pdf
+          if-no-files-found: warn
+          retention-days: 7
