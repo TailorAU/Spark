@@ -1,0 +1,4 @@
+# Test outputs can contain rendered packs with real names - never commit.
+.artifacts/
+test-results/
+playwright-report/

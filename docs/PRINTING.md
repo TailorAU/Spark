@@ -91,12 +91,12 @@ fails you still have the file.
 - **Today's plan** — the child's real day: school/kindy/day-care, two of today's
   tailored learning activities, the cross-country training session for that
   weekday, tick-boxes and blank write-in rows.
-- **Winston (Year 1):** handwriting guide-lines + trace-the-word, write-a-sentence
-  lines, sums with answer boxes at his current level, a missing-number sequence,
-  and a draw-the-hands clock.
-- **Marigold (Kindy):** letter tracing, name tracing, count-and-circle,
+- **The eldest (Year 1):** handwriting guide-lines + trace-the-word,
+  write-a-sentence lines, sums with answer boxes at their current level, a
+  missing-number sequence, and a draw-the-hands clock.
+- **The middle child (Kindy):** letter tracing, name tracing, count-and-circle,
   draw-the-next pattern, rhyme matching.
-- **Primrose (toddler):** pre-writing stroke traces, a big letter to trace,
+- **The youngest (toddler):** pre-writing stroke traces, a big letter to trace,
   count 1–3, and colouring outlines.
 
 Content is **date-seeded** — the same date always prints the same pack, and each
