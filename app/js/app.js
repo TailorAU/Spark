@@ -109,7 +109,7 @@
         ${contextsStrip()}
       </section>
       <section class="section">
-        <div class="section-head"><h2>The kids</h2></div>
+        <div class="section-head"><h2>The kids</h2><button class="link" data-act="go" data-route="print">🖨️ Print pack</button></div>
         <div class="kid-list">${cards}</div>
       </section>
       <div class="foot-hint">Tap a child to see their tailored week.</div>
@@ -278,6 +278,24 @@
     });
   }
 
+  // --- PRINT PACK ---------------------------------------------------------------
+  function renderPrint() {
+    const P = window.SPARK_PRINT;
+    if (!P) { go("home"); return; }
+    // ?date=YYYY-MM-DD lets the overnight job render tomorrow's pack.
+    const qd = new URLSearchParams(location.search).get("date");
+    app.innerHTML = `
+      <div class="pp-toolbar">
+        <button class="back" data-act="go" data-route="home">‹ Home</button>
+        <button class="btn" id="ppPrintBtn">🖨️ Print now</button>
+        <span class="muted">One A4 page per child — write-on worksheets + today's plan.</span>
+      </div>
+      ${P.render(qd)}
+    `;
+    const b = document.getElementById("ppPrintBtn");
+    if (b) b.onclick = () => window.print();
+  }
+
   // --- CONTEXTS --------------------------------------------------------------
   function renderContexts() {
     const rows = D.CONTEXT_LIBRARY.map((c) => {
@@ -431,6 +449,7 @@
       sheet: renderSheet,
       learn: renderLearn,
       practice: renderPractice,
+      print: renderPrint,
       contexts: renderContexts,
       map: renderMap,
       more: renderMore,
@@ -559,7 +578,7 @@
   }
 
   function boot() {
-    view.route = "home";
+    view.route = location.hash === "#print" ? "print" : "home";
     render();
   }
 
