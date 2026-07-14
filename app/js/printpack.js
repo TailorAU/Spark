@@ -215,7 +215,7 @@
     const date = dateStr ? new Date(dateStr + "T12:00:00") : new Date();
     const dayKey = date.toISOString().slice(0, 10);
     const dateLabel = date.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" });
-    const active = S.activeContexts();
+    const active = S.activeContexts(date); // date-keyed so packs stay deterministic
     const pages = (D.CHILDREN || []).map((child) => {
       const mine = active.filter((c) => c.childScope === "all" || !c.childScope || (Array.isArray(c.childScope) && c.childScope.includes(child.id)));
       const themeId = mine.length ? pick(rng(`theme:${child.id}:${dayKey}`), mine).id : "everyday";

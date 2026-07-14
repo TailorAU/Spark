@@ -144,6 +144,17 @@ button { font: inherit; cursor: pointer; border: none; background: none; color: 
 .toggle.on { background: var(--brand); }
 .toggle.on span { left: 23px; }
 
+/* calendar import (Life tab) */
+.cal-import { margin-top: 14px; }
+.cal-paste {
+  width: 100%; box-sizing: border-box; margin: 8px 0 10px; padding: 10px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--bg);
+  color: var(--ink); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace;
+  resize: vertical;
+}
+.cal-import-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.cal-filebtn { display: inline-flex; align-items: center; cursor: pointer; }
+
 /* map */
 .pickrow { display: flex; gap: 8px; margin: 12px 0; }
 .pick { flex: 1; border: 1px solid var(--line); border-radius: 12px; padding: 10px; font-weight: 600; font-size: 13px; background: var(--card); }

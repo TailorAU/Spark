@@ -25,6 +25,7 @@
       sheets: {}, // key: `${childId}:${weekISO}` -> { stars, total, at } (best result)
       skills: {}, // key: `${childId}:${skill}` -> { lv, up, down } (adaptive difficulty)
       mastery: {}, // key: `${childId}:${skillId}` -> { attempts, bestStars, total, mastered, at }
+      customContexts: [], // calendar-imported life contexts (see calendar.js)
       settings: { apiBaseUrl: "" },
     };
   }
@@ -48,13 +49,50 @@
     } catch (_) {}
   }
 
-  // Merge stored context flags/fields onto the library so the engine gets a
-  // single list of "active" context objects.
-  function activeContexts() {
-    return D.CONTEXT_LIBRARY.filter((c) => state.contexts[c.id]?.active).map((c) => ({
-      ...c,
-      ...state.contexts[c.id],
-    }));
+  // A calendar context is only relevant around its event: it warms up two
+  // weeks before and lingers ten days after (recounts), keyed off `onDate` so
+  // print packs stay deterministic per pack date.
+  function inContextWindow(c, onDate) {
+    if (!c.date) return true;
+    const ref = new Date(onDate);
+    ref.setHours(12, 0, 0, 0);
+    const from = new Date(`${c.date}T12:00:00`);
+    from.setDate(from.getDate() - 14);
+    const to = new Date(`${c.until || c.date}T12:00:00`);
+    to.setDate(to.getDate() + 10);
+    return ref >= from && ref <= to;
+  }
+
+  // Merge stored context flags/fields onto the library (plus any calendar-
+  // imported contexts) so the engine gets a single list of "active" objects.
+  function activeContexts(onDate) {
+    const ref = onDate ? new Date(onDate) : new Date();
+    const lib = D.CONTEXT_LIBRARY.filter((c) => state.contexts[c.id]?.active);
+    const custom = (state.customContexts || []).filter(
+      (c) => state.contexts[c.id]?.active && inContextWindow(c, ref)
+    );
+    return lib.concat(custom).map((c) => ({ ...c, ...state.contexts[c.id] }));
+  }
+
+  // --- calendar-imported contexts --------------------------------------------
+  function customContexts() {
+    return (state.customContexts || []).slice();
+  }
+
+  function addCustomContext(ctx) {
+    if (!ctx || !ctx.id) return false;
+    state.customContexts = state.customContexts || [];
+    if (state.customContexts.some((c) => c.id === ctx.id)) return false;
+    state.customContexts.push(ctx);
+    state.contexts[ctx.id] = { ...(state.contexts[ctx.id] || {}), active: true };
+    save();
+    return true;
+  }
+
+  function removeCustomContext(id) {
+    state.customContexts = (state.customContexts || []).filter((c) => c.id !== id);
+    delete state.contexts[id];
+    save();
   }
 
   function isContextActive(id) {
@@ -180,6 +218,9 @@
 
   window.SPARK_STORE = {
     activeContexts,
+    customContexts,
+    addCustomContext,
+    removeCustomContext,
     isContextActive,
     toggleContext,
     setContextField,

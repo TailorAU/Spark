@@ -297,6 +297,58 @@
   }
 
   // --- CONTEXTS --------------------------------------------------------------
+  function calendarSection() {
+    const customs = S.customContexts();
+    const rows = customs
+      .map((c) => {
+        const on = S.isContextActive(c.id);
+        return `<div class="ctx-row ${on ? "on" : ""}">
+          <div class="ctx-emoji">${c.emoji}</div>
+          <div class="ctx-info">
+            <div class="ctx-label">${esc(c.label)}</div>
+            <div class="ctx-blurb">${esc(c.blurb)}</div>
+            <div class="ctx-scope">All kids · <button class="link" data-act="cal-remove" data-id="${esc(c.id)}">Remove</button></div>
+          </div>
+          <button class="toggle ${on ? "on" : ""}" data-act="toggle" data-id="${esc(c.id)}" aria-label="Toggle"><span></span></button>
+        </div>`;
+      })
+      .join("");
+    return `<section class="section">
+      <div class="section-head"><h2>From your calendar</h2></div>
+      ${customs.length ? `<div class="ctx-rows">${rows}</div>` : `<div class="ctx-strip empty">No calendar events imported yet.</div>`}
+      <div class="card cal-import">
+        <h3>Import calendar (.ics)</h3>
+        <p>Paste an invite or an export from your calendar app. Events become life
+        contexts woven into each child's week — camping trips and cross-country
+        carnivals switch on their built-in plans (a race day even sets the training
+        countdown). Nothing leaves this device.</p>
+        <textarea id="icsPaste" class="cal-paste" rows="4" placeholder="BEGIN:VCALENDAR …" spellcheck="false"></textarea>
+        <div class="cal-import-row">
+          <button class="btn" data-act="cal-import">Import pasted text</button>
+          <label class="btn ghost cal-filebtn">Import a file<input type="file" id="icsFile" accept=".ics,text/calendar" hidden></label>
+        </div>
+      </div>
+    </section>`;
+  }
+
+  function importICS(text) {
+    const CAL = window.SPARK_CAL;
+    if (!CAL) return;
+    if (!text || !text.trim()) {
+      toast("Nothing to import");
+      return;
+    }
+    const events = CAL.parseICS(text);
+    if (!events.length) {
+      toast("No events found in that text");
+      return;
+    }
+    const res = CAL.importEvents(events);
+    const brought = res.builtins.length + res.created;
+    toast(brought ? `Imported ${brought} of ${res.total} event${res.total === 1 ? "" : "s"}` : "Those events are already in (or too far away)");
+    render();
+  }
+
   function renderContexts() {
     const rows = D.CONTEXT_LIBRARY.map((c) => {
       const on = S.isContextActive(c.id);
@@ -326,8 +378,18 @@
       <header class="page-hero"><h1>What we're doing</h1>
         <p>Turn on what's happening in real life. Spark weaves it into each child's curriculum for the week.</p></header>
       <section class="section"><div class="ctx-rows">${rows}</div></section>
-      <div class="foot-hint">More life events (birthdays, sport carnivals, term breaks) are easy to add — this is the seed set.</div>
+      ${calendarSection()}
+      <div class="foot-hint">Import the family calendar above, or just toggle what's on — either way the week tailors itself.</div>
     `;
+    const file = document.getElementById("icsFile");
+    if (file)
+      file.onchange = () => {
+        const f = file.files && file.files[0];
+        if (!f) return;
+        const reader = new FileReader();
+        reader.onload = () => importICS(String(reader.result || ""));
+        reader.readAsText(f);
+      };
   }
 
   // --- MAP -------------------------------------------------------------------
@@ -491,6 +553,13 @@
       render();
     } else if (act === "toggle") {
       S.toggleContext(el.dataset.id, !S.isContextActive(el.dataset.id));
+      render();
+    } else if (act === "cal-import") {
+      const ta = document.getElementById("icsPaste");
+      importICS(ta ? ta.value : "");
+    } else if (act === "cal-remove") {
+      S.removeCustomContext(el.dataset.id);
+      toast("Removed");
       render();
     } else if (act === "mapchild") {
       view.mapChildId = el.dataset.id;
