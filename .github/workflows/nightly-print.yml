@@ -33,8 +33,10 @@ jobs:
           node-version: "20"
       - name: Check configuration
         id: cfg
+        env:
+          SPARK_VAULT_PW: ${{ secrets.SPARK_VAULT_PW }}
         run: |
-          if [ -z "${{ secrets.SPARK_VAULT_PW }}" ]; then
+          if [ -z "$SPARK_VAULT_PW" ]; then
             echo "SPARK_VAULT_PW not set — skipping (configure secrets to enable overnight print)."
             echo "ready=false" >> "$GITHUB_OUTPUT"
           else
@@ -60,11 +62,6 @@ jobs:
           DATE: ${{ github.event.inputs.date }}
           OUT: spark-pack.pdf
         run: node render-and-email.mjs
-      - name: Upload PDF artifact
-        if: steps.cfg.outputs.ready == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: spark-pack
-          path: tools/spark-pack.pdf
-          if-no-files-found: warn
-          retention-days: 7
+      # NB: the PDF contains the children's real names, and this repo is public,
+      # so it is deliberately NEVER uploaded as an artifact — it is emailed to the
+      # printer and discarded with the runner. Do not add an upload-artifact step.
