@@ -9,3 +9,11 @@ dist/
 # generated print output
 tools/*.pdf
 spark-pack*.pdf
+
+# Local agent/session context — may quote the family password or real child
+# names. NEVER commit to this public repo. Use `git add -f` only after scrubbing.
+HANDOFF.md
+CLAUDE.md
+*.handoff.md
+scratch/
+

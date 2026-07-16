@@ -265,10 +265,10 @@ test("print pack stays deterministic with a calendar context active", async ({ p
   }, packDate);
 
   await page.goto(`/?date=${packDate}#print`);
-  await expect(page.locator(".pp-page")).toHaveCount(3);
+  await expect(page.locator(".pp-page")).toHaveCount(4);
   const first = await page.locator(".pp-pack").innerHTML();
   await page.goto(`/?date=${packDate}#print`);
-  await expect(page.locator(".pp-page")).toHaveCount(3);
+  await expect(page.locator(".pp-page")).toHaveCount(4);
   const second = await page.locator(".pp-pack").innerHTML();
   expect(second).toBe(first);
 });

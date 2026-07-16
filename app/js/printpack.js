@@ -134,22 +134,35 @@
   function pageEldest(child, r, theme, skills, dateLabel, sched) {
     const w1 = pick(r, theme.words), w2 = pick(r, theme.words.filter((w) => w !== w1));
     const addLv = (skills && skills.add) || 0, subLv = (skills && skills.sub) || 0;
-    const sums = [];
+    // NB: keep the exact rng call sequence below (each [...][lv] evaluates all
+    // three level expressions) so the worksheet stays byte-identical; we only
+    // additionally capture the answers for the grown-ups' key page.
+    const sums = [], mathsAns = [];
     for (let i = 0; i < 3; i++) {
       const a = [2 + Math.floor(r() * 5), 4 + Math.floor(r() * 8), 7 + Math.floor(r() * 6)][addLv];
       const b = [1 + Math.floor(r() * 4), 2 + Math.floor(r() * 7), 5 + Math.floor(r() * 4)][addLv];
       sums.push(sumRow(a, "+", b));
+      mathsAns.push(`${a} + ${b} = ${a + b}`);
     }
     for (let i = 0; i < 3; i++) {
       const c = [5 + Math.floor(r() * 5), 9 + Math.floor(r() * 8), 12 + Math.floor(r() * 7)][subLv];
       const d = [1 + Math.floor(r() * 4), 2 + Math.floor(r() * 6), 5 + Math.floor(r() * 5)][subLv];
       sums.push(sumRow(c, "−", d));
+      mathsAns.push(`${c} − ${d} = ${c - d}`);
     }
     const seqStart = 10 + Math.floor(r() * 80);
     const seqStart2 = 10 + Math.floor(r() * 80);
     const hour = 1 + Math.floor(r() * 11);
     const half = r() > 0.5;
-    return `<div class="pp-page">
+    const answers = {
+      stageLabel: "Year 1",
+      rows: [
+        { q: "Maths", a: mathsAns.join("&nbsp;&nbsp; ") },
+        { q: "Missing numbers", a: `${seqStart}, ${seqStart + 1}, <b>${seqStart + 2}</b>, ${seqStart + 3} &nbsp;·&nbsp; ${seqStart2}, <b>${seqStart2 + 1}</b>, ${seqStart2 + 2}, <b>${seqStart2 + 3}</b>` },
+        { q: "Clock", a: half ? `half past ${hour} — long hand on 6, short hand just past ${hour}` : `${hour} o'clock — long hand on 12, short hand on ${hour}` },
+      ],
+    };
+    const html = `<div class="pp-page">
       ${head(child, dateLabel, theme.label)}
       ${sched}
       ${sec("Handwriting — trace, then write your own", traceWord(w1) + hwLines(1) + traceWord(w2) + hwLines(1))}
@@ -159,24 +172,38 @@
       ${sec("Time — draw the hands", `<div class="pp-clockrow">${blankClock(`${half ? `half past ${hour}` : `${hour} o'clock`}`)}<div class="pp-clock-side">Draw the hour hand (short) and minute hand (long). The long hand points ${half ? "down to 6" : "up to 12"}.</div></div>`)}
       <div class="pp-foot">Spark · tailored for ${esc(child.name)} · ${esc(dateLabel)}</div>
     </div>`;
+    return { html, answers };
   }
 
   function pageMiddle(child, r, theme, dateLabel, sched) {
     const w = pick(r, theme.words);
     const letters = [...new Set([w[0], pick(r, "ABMST".split("")), child.name[0].toUpperCase()])].slice(0, 3);
     const rows = letters.map((L) => traceWord((L + " ").repeat(6).trim(), 1)).join("");
-    const countRows = range(2).map(() => {
+    // Compute the count-and-circle data first (same rng order), then render — so
+    // the answer key can report the targets without a second, divergent stream.
+    const countData = range(2).map(() => {
       const n = 4 + Math.floor(r() * 4);
       const total = n + 2 + Math.floor(r() * 2);
       const item = pick(r, theme.things);
-      return `<div class="pp-count"><span class="pp-count-ask">Circle <b>${n}</b>:</span><span class="pp-count-items">${range(total).map(() => art(item, 34)).join("")}</span></div>`;
-    }).join("");
+      return { n, total, item };
+    });
+    const countRows = countData.map(({ n, total, item }) =>
+      `<div class="pp-count"><span class="pp-count-ask">Circle <b>${n}</b>:</span><span class="pp-count-items">${range(total).map(() => art(item, 34)).join("")}</span></div>`
+    ).join("");
     const pat = shuffle(r, theme.things).slice(0, 2);
     const patternRow = `<div class="pp-pattern">${[0, 1, 0, 1, 0].map((i) => art(pat[i], 36)).join("")}<span class="pp-box draw"></span></div>`;
     const rhymes = shuffle(r, [["CAT", "HAT"], ["STAR", "CAR"], ["BELL", "SHELL"]]);
     const left = rhymes.map((p) => p[0]), right = shuffle(r, rhymes.map((p) => p[1]));
     const match = `<div class="pp-match"><div>${left.map((x) => `<div class="pp-match-w">${x} ●</div>`).join("")}</div><div>${right.map((x) => `<div class="pp-match-w">● ${x}</div>`).join("")}</div></div>`;
-    return `<div class="pp-page">
+    const answers = {
+      stageLabel: "Kindergarten",
+      rows: [
+        { q: "Count &amp; circle", a: countData.map((c) => `circle ${c.n}`).join(", ") },
+        { q: "What comes next", a: `a ${esc(pat[1])}` },
+        { q: "Rhymes", a: [["CAT", "HAT"], ["STAR", "CAR"], ["BELL", "SHELL"]].map((p) => `${p[0]}–${p[1]}`).join(", ") },
+      ],
+    };
+    const html = `<div class="pp-page">
       ${head(child, dateLabel, theme.label)}
       ${sched}
       ${sec("Trace the letters", rows + hwLines(1), "then try a row of your own")}
@@ -186,6 +213,7 @@
       ${sec("Draw a line between the rhyming words", match)}
       <div class="pp-foot">Spark · tailored for ${esc(child.name)} · ${esc(dateLabel)}</div>
     </div>`;
+    return { html, answers };
   }
 
   function pageYoungest(child, r, theme, dateLabel, sched) {
@@ -198,7 +226,12 @@
       const item = pick(r, theme.things);
       return `<div class="pp-count"><span class="pp-count-ask">Count: <b>${n}</b></span><span class="pp-count-items">${range(n).map(() => art(item, 40)).join("")}</span></div>`;
     }).join("");
-    return `<div class="pp-page">
+    const answers = {
+      stageLabel: "Early years",
+      openEnded: true,
+      rows: [{ q: "", a: `Tracing, the big letter ${initial}, counting 1–2–3 and colouring are all open-ended — count along together and praise the effort.` }],
+    };
+    const html = `<div class="pp-page">
       ${head(child, dateLabel, theme.label)}
       ${sched}
       ${sec("Trace the lines with your finger, then a crayon", strokes)}
@@ -206,6 +239,46 @@
       ${sec("Point and count together", dots)}
       ${sec("Colour me in!", colouring)}
       <div class="pp-foot">Spark · tailored for ${esc(child.name)} · ${esc(dateLabel)}</div>
+    </div>`;
+    return { html, answers };
+  }
+
+  // ---- grown-ups' answer key -------------------------------------------------
+  const safeName = (child) => (child && child.name && String(child.name).trim()) || "Friend";
+
+  function keyBlock(e) {
+    const rows = (e.answers.rows || [])
+      .map((row) => `<div class="pp-key-row">${row.q ? `<b>${row.q}:</b> ` : ""}${row.a}</div>`)
+      .join("");
+    return `<div class="pp-keyblock">
+      <div class="pp-key-name">${esc(e.name)}${e.answers.stageLabel ? ` · ${esc(e.answers.stageLabel)}` : ""}</div>
+      ${rows}
+    </div>`;
+  }
+
+  // A single grown-ups' page: every child's checkable answers, kept separate
+  // from the kids' pages so it can be torn off. Deterministic (derived from the
+  // same seeded models as the worksheets).
+  function answerKeyPage(entries, dateLabel) {
+    return `<div class="pp-page pp-keypage">
+      <div class="pp-head">
+        <div class="pp-brand"><span class="pp-dot"></span> Spark</div>
+        <div class="pp-title">For grown-ups — today's answers</div>
+        <div class="pp-meta">${esc(dateLabel)} · a quick check-list for marking together</div>
+      </div>
+      <div class="pp-keynote">Keep this page for yourself. The maths and puzzle answers are below; the handwriting, drawing and colouring are all “great effort” by default.</div>
+      ${entries.map(keyBlock).join("")}
+      <div class="pp-foot">Spark · answer key · ${esc(dateLabel)}</div>
+    </div>`;
+  }
+
+  // Last-resort page so a single bad child record degrades one page, never the
+  // whole 5:30am run.
+  function fallbackPage(child, dateLabel) {
+    return `<div class="pp-page">
+      ${head({ name: safeName(child), stage: "", schoolType: "" }, dateLabel, "Home adventure")}
+      ${sec("Today's sheet", `<div class="pp-prompt">We couldn't build today's activities for this page. Grab a pencil and draw your favourite thing about today!</div>` + hwLines(3))}
+      <div class="pp-foot">Spark · ${esc(dateLabel)}</div>
     </div>`;
   }
 
@@ -216,18 +289,32 @@
     const dayKey = date.toISOString().slice(0, 10);
     const dateLabel = date.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" });
     const active = S.activeContexts(date); // date-keyed so packs stay deterministic
-    const pages = (D.CHILDREN || []).map((child) => {
-      const mine = active.filter((c) => c.childScope === "all" || !c.childScope || (Array.isArray(c.childScope) && c.childScope.includes(child.id)));
-      const themeId = mine.length ? pick(rng(`theme:${child.id}:${dayKey}`), mine).id : "everyday";
-      const theme = THEME_WORDS[themeId] || THEME_WORDS.everyday;
-      const r = rng(`print:${child.id}:${dayKey}`);
-      const E = window.SPARK_ENGINE;
-      const plan = E ? E.planForChild(child, E.weekStart(date), active) : null;
-      const sched = scheduleSec(child, date, plan);
-      if (child.stage === "year1") return pageEldest(child, r, theme, S.sheetSkills(child.id), dateLabel, sched);
-      if (child.stage === "kindy") return pageMiddle(child, r, theme, dateLabel, sched);
-      return pageYoungest(child, r, theme, dateLabel, sched);
-    });
+    const pages = [];
+    const keyEntries = [];
+    for (const child of D.CHILDREN || []) {
+      try {
+        // Normalise the name once so an empty/missing vault field can never crash
+        // name[0] and blank the entire pack.
+        const c = { ...child, name: safeName(child) };
+        const mine = active.filter((ctx) => ctx.childScope === "all" || !ctx.childScope || (Array.isArray(ctx.childScope) && ctx.childScope.includes(c.id)));
+        const themeId = mine.length ? pick(rng(`theme:${c.id}:${dayKey}`), mine).id : "everyday";
+        const theme = THEME_WORDS[themeId] || THEME_WORDS.everyday;
+        const r = rng(`print:${c.id}:${dayKey}`);
+        const E = window.SPARK_ENGINE;
+        const plan = E ? E.planForChild(c, E.weekStart(date), active) : null;
+        const sched = scheduleSec(c, date, plan);
+        let built;
+        if (c.stage === "year1") built = pageEldest(c, r, theme, S.sheetSkills(c.id), dateLabel, sched);
+        else if (c.stage === "kindy") built = pageMiddle(c, r, theme, dateLabel, sched);
+        else built = pageYoungest(c, r, theme, dateLabel, sched);
+        pages.push(built.html);
+        keyEntries.push({ name: c.name, answers: built.answers });
+      } catch (_) {
+        // One bad record must not take down the other children's pages.
+        pages.push(fallbackPage(child, dateLabel));
+      }
+    }
+    if (keyEntries.length) pages.push(answerKeyPage(keyEntries, dateLabel));
     return `<div class="pp-pack">${pages.join("")}</div>`;
   }
 

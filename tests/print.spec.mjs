@@ -21,7 +21,7 @@ test("today's pack: one structured A4 page per child", async ({ page }) => {
   const date = brisbaneToday();
   await unlock(page, { path: `/?date=${date}#print` });
 
-  await expect(page.locator(".pp-page")).toHaveCount(3);
+  await expect(page.locator(".pp-page")).toHaveCount(4);
 
   // Stage-specific structure identifies each child's page without names:
   // Year 1 = sums + clock, Kindergarten = rhyme matching, toddler = big initial + colouring.
@@ -51,26 +51,26 @@ test("today's pack: one structured A4 page per child", async ({ page }) => {
 
 test("pack is date-deterministic: same date same pack, new date new pack", async ({ page }) => {
   await unlock(page, { path: "/?date=2026-03-05#print", remember: true });
-  await expect(page.locator(".pp-page")).toHaveCount(3);
+  await expect(page.locator(".pp-page")).toHaveCount(4);
   const first = await page.locator(".pp-pack").innerHTML();
 
   // Re-render the same date (remember-me carries the unlock through reload).
   await page.goto("/?date=2026-03-05#print");
-  await expect(page.locator(".pp-page")).toHaveCount(3);
+  await expect(page.locator(".pp-page")).toHaveCount(4);
   const second = await page.locator(".pp-pack").innerHTML();
   expect(second).toBe(first);
 
   // A different date produces different content.
   await page.goto("/?date=2026-03-06#print");
-  await expect(page.locator(".pp-page")).toHaveCount(3);
+  await expect(page.locator(".pp-page")).toHaveCount(4);
   const other = await page.locator(".pp-pack").innerHTML();
   expect(other).not.toBe(first);
 });
 
-test("print media hides app chrome and a 3-page A4 PDF renders", async ({ page }) => {
+test("print media hides app chrome and a 4-page A4 PDF renders", async ({ page }) => {
   const date = brisbaneToday();
   await unlock(page, { path: `/?date=${date}#print` });
-  await expect(page.locator(".pp-page")).toHaveCount(3);
+  await expect(page.locator(".pp-page")).toHaveCount(4);
 
   await page.emulateMedia({ media: "print" });
   await expect(page.locator("#nav")).toHaveCSS("display", "none");
@@ -85,7 +85,31 @@ test("print media hides app chrome and a 3-page A4 PDF renders", async ({ page }
   });
 
   expect(pdf.length).toBeGreaterThan(20_000);
-  // One page per child: count page objects in the PDF stream.
+  // One page per child (3) plus the grown-ups' answer key (1): count page
+  // objects in the PDF stream.
   const pages = (pdf.toString("latin1").match(/\/Type\s*\/Page[^s]/g) || []).length;
-  expect(pages).toBe(3);
+  expect(pages).toBe(4);
+});
+
+test("grown-ups' answer key: last page, one block per child, arithmetically correct", async ({ page }) => {
+  const date = brisbaneToday();
+  await unlock(page, { path: `/?date=${date}#print` });
+  await expect(page.locator(".pp-page")).toHaveCount(4);
+
+  // The key is the final page and never mixes into a child's worksheet page.
+  const key = page.locator(".pp-keypage");
+  await expect(key).toHaveCount(1);
+  await expect(page.locator(".pp-page").last()).toHaveClass(/pp-keypage/);
+  await expect(key.locator(".pp-keyblock")).toHaveCount(3);
+
+  // Whatever the seed, every printed maths answer must actually be correct.
+  const mathsRow = key.locator(".pp-key-row", { hasText: "Maths:" }).first();
+  const txt = await mathsRow.innerText();
+  const eqs = txt.match(/(\d+)\s*([+−-])\s*(\d+)\s*=\s*(-?\d+)/g) || [];
+  expect(eqs.length).toBe(6);
+  for (const eq of eqs) {
+    const m = eq.match(/(\d+)\s*([+−-])\s*(\d+)\s*=\s*(-?\d+)/);
+    const a = +m[1], b = +m[3], got = +m[4];
+    expect(got).toBe(m[2] === "+" ? a + b : a - b);
+  }
 });
