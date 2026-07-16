@@ -56,6 +56,7 @@
   // curriculum" spine.
   function weekFocus(child, monday) {
     const fw = D.FRAMEWORKS[child.framework];
+    if (!fw) return []; // unknown framework degrades to an empty focus list, never a throw
     const wi = weekIndex(monday);
     return fw.areas.map((area) => ({
       areaId: area.id,
@@ -80,7 +81,7 @@
   // across the week (by area index) so a week mixes e.g. Fiji and camping rather
   // than one context dominating. Falls back to a clean curriculum activity.
   function tailorActivity(child, focus, contexts, index) {
-    const byStrand = weaveKeyForStrand(focus.strand);
+    const byStrand = weaveKeyForStrand(focus.strand, child.framework);
     const matches = contexts
       .map((ctx) => {
         const w = (byStrand && ctx.weave[byStrand]) || ctx.weave[focus.areaId] || null;
@@ -100,7 +101,12 @@
   }
 
   // Map a strand label to the finer weave keys used in the context library.
-  function weaveKeyForStrand(strand) {
+  // Only for the school framework (acv9): the finer "writing"/"measurement"
+  // weaves are Year-1 tasks, and EYLF/QKLG strands like "Early mark-making &
+  // writing" must fall through to their own age-appropriate areaId weave
+  // instead of handing a toddler "write 3 sentences".
+  function weaveKeyForStrand(strand, framework) {
+    if (framework !== "acv9") return null;
     const s = strand.toLowerCase();
     if (s.includes("writing") || s.includes("recount") || s.includes("mark-making")) return "writing";
     if (s.includes("measurement") || s.includes("time")) return "measurement";

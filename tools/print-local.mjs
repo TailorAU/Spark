@@ -18,16 +18,41 @@ if (!PW) { console.error("SPARK_VAULT_PW is required"); process.exit(2); }
 const DATE = process.env.DATE || new Date().toLocaleDateString("en-CA", { timeZone: "Australia/Brisbane" });
 
 const browser = await chromium.launch({ args: ["--no-sandbox"], executablePath: process.env.PW_CHROMIUM || undefined });
-const page = await (await browser.newContext({ viewport: { width: 820, height: 1123 } })).newPage();
-await page.goto(`${URL}/?date=${DATE}#print`, { waitUntil: "networkidle", timeout: 60000 });
-await page.waitForSelector(".lock-card", { timeout: 30000 });
-await page.fill("#lockPw", PW);
-await page.click("#lockGo");
-await page.waitForSelector(".pp-page", { timeout: 30000 });
-await page.emulateMedia({ media: "print" });
-await page.pdf({ path: OUT, format: "A4", printBackground: true });
+const ctx = await browser.newContext({ viewport: { width: 820, height: 1123 } });
+
+async function renderOnce() {
+  const page = await ctx.newPage();
+  try {
+    await page.goto(`${URL}/?date=${DATE}#print`, { waitUntil: "networkidle", timeout: 60000 });
+    await page.waitForSelector(".lock-card", { timeout: 30000 });
+    await page.fill("#lockPw", PW);
+    await page.click("#lockGo");
+    await page.waitForSelector(".pp-page", { timeout: 30000 });
+    const pages = await page.locator(".pp-page").count();
+    if (pages < 3) console.warn(`only ${pages} page(s) rendered - expected one per child + answer key; printing anyway`);
+    await page.emulateMedia({ media: "print" });
+    await page.pdf({ path: OUT, format: "A4", printBackground: true });
+    return pages;
+  } finally {
+    await page.close();
+  }
+}
+
+// A transient network/site blip at 5:30am must not cost the morning's pack:
+// retry the whole render a few times before giving up.
+const ATTEMPTS = Number(process.env.ATTEMPTS || 3);
+let pages = 0, lastErr = null;
+for (let i = 1; i <= ATTEMPTS; i++) {
+  try { pages = await renderOnce(); lastErr = null; break; }
+  catch (e) {
+    lastErr = e;
+    console.error(`render attempt ${i}/${ATTEMPTS} failed: ${e.message}`);
+    if (i < ATTEMPTS) await new Promise((r) => setTimeout(r, 15000));
+  }
+}
 await browser.close();
-console.log(`rendered ${DATE} -> ${OUT} (${statSync(OUT).size} bytes)`);
+if (lastErr) { console.error("all render attempts failed - nothing to print"); process.exit(1); }
+console.log(`rendered ${DATE} (${pages} pages) -> ${OUT} (${statSync(OUT).size} bytes)`);
 
 if (process.env.NO_PRINT === "1") process.exit(0);
 

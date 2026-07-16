@@ -494,6 +494,10 @@
     let introShown = false;
     let explainTimer = 0;
     let qs, idx, mistakes, stars, state;
+    // True from the moment a question is won until the next one paints, so
+    // taps landing in the celebrate/solved window can't double-fire (skipping
+    // questions, minting unearned stars, or indexing past the last item).
+    let resolving = false;
     let sceneFX = null, confettiFX = null;
     const clone = (o) => JSON.parse(JSON.stringify(o));
 
@@ -607,6 +611,7 @@
     function next() {
       if (idx >= qs.length) return finish();
       mistakes = 0;
+      resolving = false;
       state = {};
       paint();
     }
@@ -710,6 +715,7 @@
     }
 
     function celebrate(el) {
+      resolving = true;
       el.classList.add("pop");
       burstAt(el);
       setSparky("cheer");
@@ -777,7 +783,7 @@
       }
       if (act === "startset") { introShown = true; return next(); }
       if (act === "explnext") { clearTimeout(explainTimer); return advance(); }
-      if (!q) return;
+      if (!q || resolving) return; // ignore mechanic taps while a win is resolving
 
       if (act === "choice" && q.kind === "choice") {
         const o = q.options[+el.dataset.i];
@@ -797,7 +803,7 @@
           paint();
           bumpBasket();
           const total = q.items.filter((x) => x.match).length;
-          if (state.found.size >= total) setTimeout(() => solved(), 700);
+          if (state.found.size >= total) { resolving = true; setTimeout(() => solved(), 700); }
         } else wrong(el);
       } else if (act === "tile" && q.kind === "build") {
         const i = +el.dataset.i;
@@ -810,6 +816,7 @@
           state.placed.push(needed);
           FX.tick();
           if (state.placed.length >= q.word.length) {
+            resolving = true;
             setSparky("cheer");
             paint();
             setTimeout(() => solved(), 700);
@@ -817,6 +824,7 @@
         } else wrong(el);
       } else if (act === "bucket" && q.kind === "sort") {
         const it = q.items[state.at];
+        if (!it) return; // final item already resolved — nothing left to sort
         if (+el.dataset.i === it.bucket) {
           const itemEl = host.querySelector(".ws-sort-item");
           if (itemEl) flyClone(itemEl, el, draw(it.label, 64));
@@ -824,6 +832,7 @@
           setSparky("cheer");
           FX.tick();
           if (state.at >= q.items.length) {
+            resolving = true;
             el.classList.add("right");
             setTimeout(() => solved(), 500);
           } else setTimeout(() => { if (qs[idx] === q && state.at < q.items.length) paint(); }, 260);

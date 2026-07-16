@@ -652,7 +652,19 @@
   }
 
   async function init() {
-    if (window.SPARK_LEARN) { try { await window.SPARK_LEARN.ready(); } catch (_) {} }
+    // Warm the Learn corpus WITHOUT blocking boot — the lock screen (and the
+    // 5:30am print flow behind it) must never wait on a content.json fetch the
+    // print pack doesn't use. Every Learn consumer already degrades via
+    // LEARN.has(); when the corpus lands, refresh the passive views so the
+    // Learning Journey appears — never mid-worksheet, never over the lock.
+    if (window.SPARK_LEARN) {
+      window.SPARK_LEARN.ready()
+        .then(() => {
+          const locked = document.querySelector(".lock-card");
+          if (!locked && !sheetPlayer && ["home", "child", "learn"].includes(view.route)) render();
+        })
+        .catch(() => {});
+    }
     const AUTH = window.SPARK_AUTH;
     // No vault configured (dev build) → run open, as before.
     if (!AUTH || !(await AUTH.hasVault())) {

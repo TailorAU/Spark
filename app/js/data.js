@@ -13,11 +13,8 @@
   // The children (single-family v1). Ages / year levels computed from DOB
   // against Queensland enrolment rules.
   // ---------------------------------------------------------------------------
-  // Anonymised for the public repo — no real names, exact birthdays, or a
-  // specific named school. Ages and year levels are preserved: they're derived
-  // from these representative DOBs against Queensland enrolment rules, so the
-  // curriculum logic is unchanged. Swap these three for your own family locally.
-  // Child records are NOT shipped in source. They live encrypted in
+  // Child records are NOT shipped in source — never paste real names, DOBs or
+  // a school into this file (the repo is public). They live encrypted in
   // children.enc.json and are injected here by SPARK_AUTH after the family
   // enters the password (see auth.js). Until then this is empty and the app
   // shows the lock screen.

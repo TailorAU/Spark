@@ -92,7 +92,7 @@ export async function expectedPractice(page, childId, skillId) {
 }
 
 /* Wait until question index `qi` is the active one (the 'now' progress dot). */
-async function waitForQuestion(page, qi) {
+export async function waitForQuestion(page, qi) {
   await page.waitForFunction(
     (expected) => {
       const dots = document.querySelectorAll(".ws-dot");
@@ -156,6 +156,40 @@ async function clickTileByLetter(page, letter) {
  * UI (real clicks, so blocked taps or repaint races fail the run).
  * In learn mode, dismiss the teaching explanation card after each question.
  */
+export async function playQuestion(page, q, { learn = false, checkSettled = false } = {}) {
+  if (q.kind === "choice") {
+    await page.click(`[data-ws="choice"][data-i="${q.correctIndex}"]`);
+  } else if (q.kind === "tapall") {
+    for (let t = 0; t < q.matches.length; t++) {
+      await tapItem(page, q.matches[t]);
+      if (checkSettled && t === 0) {
+        // Repaints of the same question must not replay entrance animations.
+        await expect(page.locator(".ws-body")).toHaveClass(/ws-settled/);
+      }
+    }
+  } else if (q.kind === "build") {
+    if (learn) {
+      for (const ch of q.word) await clickTileByLetter(page, ch);
+    } else {
+      const used = new Set();
+      for (const ch of q.word) {
+        const i = q.tiles.findIndex((t, idx) => t === ch && !used.has(idx));
+        expect(i, `tile for letter ${ch}`).toBeGreaterThanOrEqual(0);
+        used.add(i);
+        await page.click(`[data-ws="tile"][data-i="${i}"]`);
+      }
+    }
+  } else if (q.kind === "sort") {
+    for (const bucket of q.buckets) {
+      await page.click(`[data-ws="bucket"][data-i="${bucket}"]`);
+      // The sort item repaints ~260ms after a correct drop.
+      await page.waitForTimeout(320);
+    }
+  } else {
+    throw new Error(`unknown question kind: ${q.kind}`);
+  }
+}
+
 export async function playPerfectly(page, script, { learn = false } = {}) {
   let checkedOverlays = false;
   let checkedSettled = false;
@@ -169,38 +203,8 @@ export async function playPerfectly(page, script, { learn = false } = {}) {
       checkedOverlays = true;
     }
 
-    if (q.kind === "choice") {
-      await page.click(`[data-ws="choice"][data-i="${q.correctIndex}"]`);
-    } else if (q.kind === "tapall") {
-      for (let t = 0; t < q.matches.length; t++) {
-        await tapItem(page, q.matches[t]);
-        if (!checkedSettled) {
-          // Repaints of the same question must not replay entrance animations.
-          await expect(page.locator(".ws-body")).toHaveClass(/ws-settled/);
-          checkedSettled = true;
-        }
-      }
-    } else if (q.kind === "build") {
-      if (learn) {
-        for (const ch of q.word) await clickTileByLetter(page, ch);
-      } else {
-        const used = new Set();
-        for (const ch of q.word) {
-          const i = q.tiles.findIndex((t, idx) => t === ch && !used.has(idx));
-          expect(i, `tile for letter ${ch}`).toBeGreaterThanOrEqual(0);
-          used.add(i);
-          await page.click(`[data-ws="tile"][data-i="${i}"]`);
-        }
-      }
-    } else if (q.kind === "sort") {
-      for (const bucket of q.buckets) {
-        await page.click(`[data-ws="bucket"][data-i="${bucket}"]`);
-        // The sort item repaints ~260ms after a correct drop.
-        await page.waitForTimeout(320);
-      }
-    } else {
-      throw new Error(`unknown question kind: ${q.kind}`);
-    }
+    await playQuestion(page, q, { learn, checkSettled: q.kind === "tapall" && !checkedSettled });
+    if (q.kind === "tapall") checkedSettled = true;
 
     if (learn) {
       // Teaching explanation card follows each correct answer in Learn mode.

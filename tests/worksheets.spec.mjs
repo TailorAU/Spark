@@ -5,7 +5,7 @@
  * that scene overlays never block taps.
  */
 import { test, expect } from "@playwright/test";
-import { unlock, expectedSheet, playPerfectly, CHILD_IDS } from "./helpers.mjs";
+import { unlock, expectedSheet, playPerfectly, playQuestion, waitForQuestion, CHILD_IDS } from "./helpers.mjs";
 
 for (const childId of CHILD_IDS) {
   test(`${childId}: weekly worksheet plays to a perfect score`, async ({ page }) => {
@@ -55,6 +55,47 @@ test("play again reshuffles: attempt 1 differs from attempt 0", async ({ page })
     return false;
   });
   expect(differs).toBeTruthy();
+});
+
+test("double-tapping a correct answer resolves exactly one question", async ({ page }) => {
+  await unlock(page);
+
+  // Find a child whose sheet contains a choice question this week.
+  let childId = null, script = null, choiceIdx = -1;
+  for (const id of CHILD_IDS) {
+    const s = await expectedSheet(page, id);
+    const i = s.findIndex((q) => q.kind === "choice");
+    if (i >= 0) { childId = id; script = s; choiceIdx = i; break; }
+  }
+  expect(childId, "at least one sheet has a choice question").not.toBeNull();
+
+  await page.click(`[data-act="child"][data-id="${childId}"]`);
+  await page.click('[data-act="sheet"]');
+  await page.waitForSelector(".ws-root .ws-head");
+
+  // Play up to the choice question normally.
+  for (let qi = 0; qi < choiceIdx; qi++) {
+    await waitForQuestion(page, qi);
+    await playQuestion(page, script[qi]);
+  }
+  await waitForQuestion(page, choiceIdx);
+
+  // Rapid double-tap on the correct option. Without the resolve lock this
+  // fired solved() twice: the next question was skipped (and an unearned star
+  // minted), or a TypeError thrown on the last question.
+  await page.dblclick(`[data-ws="choice"][data-i="${script[choiceIdx].correctIndex}"]`);
+  await page.waitForTimeout(1500); // all resolve timers are <= 700ms
+
+  if (choiceIdx === script.length - 1) {
+    await expect(page.locator(".ws-end")).toBeVisible();
+  } else {
+    const now = await page.evaluate(() => {
+      let n = -1;
+      document.querySelectorAll(".ws-dot").forEach((d, i) => { if (d.classList.contains("now")) n = i; });
+      return n;
+    });
+    expect(now, "double-tap must advance exactly one question").toBe(choiceIdx + 1);
+  }
 });
 
 test("exit button leaves the sheet cleanly mid-question", async ({ page }) => {

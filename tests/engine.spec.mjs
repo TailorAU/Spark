@@ -135,3 +135,35 @@ test("cross-country spotlight follows the race date", async ({ page }) => {
   expect(r.pastHas).toBeFalsy();
   expect(r.wrongChildHas).toBeFalsy();
 });
+
+test("strand-level writing/measurement weaves are gated to the school framework", async ({ page }) => {
+  const r = await page.evaluate((synth) => {
+    const D = window.SPARK_DATA;
+    const E = window.SPARK_ENGINE;
+    const contexts = D.CONTEXT_LIBRARY.map((c) => ({ ...c, active: true, raceDate: "2026-06-29" }));
+    // Every strand-level weave string across the library - a Year-1 task like
+    // "write 3 sentences" must never be handed to the kindy/eylf children.
+    const strandWeaves = new Set(
+      contexts.flatMap((c) => [c.weave && c.weave.writing, c.weave && c.weave.measurement]).filter(Boolean)
+    );
+    let littleKidHits = 0;
+    let eldestHits = 0;
+    const start = E.weekStart(new Date("2026-01-05T12:00:00"));
+    for (let w = 0; w < 52; w++) {
+      const monday = E.addWeeks(start, w);
+      for (const child of [synth.middle, synth.youngest]) {
+        for (const item of E.planForChild(child, monday, contexts).items) {
+          if (strandWeaves.has(item.activity.text)) littleKidHits++;
+        }
+      }
+      for (const item of E.planForChild(synth.eldest, monday, contexts).items) {
+        if (strandWeaves.has(item.activity.text)) eldestHits++;
+      }
+    }
+    return { littleKidHits, eldestHits };
+  }, SYNTH);
+  // The gate blocks the leak for eylf/qklg...
+  expect(r.littleKidHits).toBe(0);
+  // ...without turning the finer weaves off for the school child.
+  expect(r.eldestHits).toBeGreaterThan(0);
+});
