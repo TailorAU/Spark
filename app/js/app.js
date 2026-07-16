@@ -665,6 +665,16 @@
         })
         .catch(() => {});
     }
+    // The committed family config (family.json) IS a print-pack input, so load
+    // it before first render — but cap the wait so a stall can never block the
+    // lock screen (and the 5:30am flow). Missing/invalid config = defaults.
+    try {
+      const cfg = await Promise.race([
+        fetch("./family.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
+        new Promise((resolve) => setTimeout(() => resolve(null), 3000)),
+      ]);
+      if (cfg) S.applyConfig(cfg);
+    } catch (_) {}
     const AUTH = window.SPARK_AUTH;
     // No vault configured (dev build) → run open, as before.
     if (!AUTH || !(await AUTH.hasVault())) {

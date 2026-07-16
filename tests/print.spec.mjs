@@ -42,11 +42,22 @@ test("today's pack: one structured A4 page per child", async ({ page }) => {
     await expect(pg.locator(".pp-writein")).toHaveCount(2);
   }
 
-  // Cross-country training session appears on the Year 1 page on weekdays
-  // (default race date is 4 weeks out, which the plan covers).
-  const dow = new Date(`${date}T12:00:00`).getDay();
+  // Cross-country training appears on the Year 1 page on weekdays while the
+  // configured race date is within the training plan - derive the expectation
+  // from live state so the suite stays green after race day passes.
+  const expectTraining = await page.evaluate((d) => {
+    const S = window.SPARK_STORE, E = window.SPARK_ENGINE, D = window.SPARK_DATA;
+    const ref = new Date(`${d}T12:00:00`);
+    const dow = ref.getDay();
+    if (dow < 1 || dow > 5) return false;
+    const cc = S.activeContexts(ref).find((c) => c.id === "crosscountry");
+    if (!cc || !cc.raceDate) return false;
+    const weeksOut = Math.round((E.weekStart(new Date(cc.raceDate)) - E.weekStart(ref)) / (7 * 24 * 3600 * 1000));
+    const plan = D.CROSS_COUNTRY_PLAN.find((p) => p.wk === weeksOut);
+    return !!(plan && plan.sessions[dow - 1]);
+  }, date);
   const training = page.locator(".pp-page:has(.pp-sumgrid) .pp-todo", { hasText: "Training:" });
-  await expect(training).toHaveCount(dow >= 1 && dow <= 5 ? 1 : 0);
+  await expect(training).toHaveCount(expectTraining ? 1 : 0);
 });
 
 test("pack is date-deterministic: same date same pack, new date new pack", async ({ page }) => {

@@ -43,6 +43,45 @@
 
   let state = load();
 
+  // --- committed family config (family.json) ---------------------------------
+  // The 5:30am print run renders in a fresh browser with NO localStorage, so
+  // without this every nightly pack froze on defaults(): the race countdown
+  // stuck at ~4 weeks, calendar events never reached paper. family.json is the
+  // committed, PII-free source of truth the headless run follows. Semantics:
+  //   - context fields (raceDate, dates): config wins over defaults AND over
+  //     the seeded stored copy, so a curated date beats a stale rolling one;
+  //   - `active` flags: a stored value wins - the family's in-app toggles are
+  //     never stomped by config;
+  //   - customContexts: config entries join by id; device-imported ones win;
+  //   - printSkills: fallback difficulty ONLY where no local skill record
+  //     exists (fresh headless run) - real adaptive progress always wins.
+  // Never save()d here: the merge is recomputed each boot so config edits keep
+  // taking effect on every device.
+  let printConfig = null;
+
+  function applyConfig(cfg) {
+    if (!cfg || typeof cfg !== "object") return;
+    printConfig = cfg;
+    let storedCtx = {};
+    try { storedCtx = (JSON.parse(localStorage.getItem(KEY)) || {}).contexts || {}; } catch (_) {}
+    for (const [id, fields] of Object.entries(cfg.contexts || {})) {
+      const stored = storedCtx[id] || {};
+      const merged = { ...(state.contexts[id] || {}), ...fields };
+      if ("active" in stored) merged.active = stored.active;
+      state.contexts[id] = merged;
+    }
+    for (const ctx of cfg.customContexts || []) {
+      if (!ctx || !ctx.id) continue;
+      state.customContexts = state.customContexts || [];
+      if (!state.customContexts.some((c) => c.id === ctx.id)) {
+        state.customContexts.push(ctx);
+        if (!("active" in (storedCtx[ctx.id] || {}))) {
+          state.contexts[ctx.id] = { ...(state.contexts[ctx.id] || {}), active: true };
+        }
+      }
+    }
+  }
+
   function save() {
     try {
       localStorage.setItem(KEY, JSON.stringify(state));
@@ -177,7 +216,16 @@
   // The skill-level snapshot the worksheet generator keys off (deterministic
   // for a given store state — pass the SAME object when recomputing a sheet).
   function sheetSkills(childId) {
-    return { add: skillLevel(childId, "add"), sub: skillLevel(childId, "sub") };
+    // Local adaptive records win; the committed family.json printSkills only
+    // fill the gap on a state-less run (the nightly print).
+    const cfg = (printConfig && printConfig.printSkills && printConfig.printSkills[childId]) || {};
+    const lv = (key) => {
+      const rec = state.skills[`${childId}:${key}`];
+      if (rec) return rec.lv;
+      const v = cfg[key];
+      return typeof v === "number" ? Math.max(0, Math.min(2, v)) : 0;
+    };
+    return { add: lv("add"), sub: lv("sub") };
   }
 
   // --- skill mastery (curriculum Learn surface) ------------------------------
@@ -217,6 +265,7 @@
   }
 
   window.SPARK_STORE = {
+    applyConfig,
     activeContexts,
     customContexts,
     addCustomContext,

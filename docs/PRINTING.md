@@ -103,6 +103,27 @@ Content is **date-seeded** — the same date always prints the same pack, and ea
 new day is fresh. The theme (Fiji / camping / race day / home) follows whatever
 life events are switched on in the app's **Life** tab.
 
+The pack ends with a **For grown-ups — today's answers** page: every checkable
+answer (sums, sequences, the clock, count-and-circle, patterns, rhymes) in one
+tear-off key.
+
+## Keeping the pack current — `app/family.json`
+
+The overnight render runs in a fresh browser with no saved state, so it can't
+see what's in anyone's app. `app/family.json` is the committed, **PII-free**
+source of truth it follows instead:
+
+- `contexts` — which life events are on, and the real `raceDate` (this is what
+  makes the printed cross-country countdown actually count down).
+- `customContexts` — calendar-style one-off events (same shape the Life tab's
+  ICS import creates) with a `date`/`until` window.
+- `printSkills` — per-child print difficulty (0–2) for the maths sections.
+
+Edit, commit, push — the next morning's pack reflects it (~90s to deploy). On
+the kids' devices the file only fills gaps: their own toggles and adaptive
+progress always win. **Never put names, birthdays or a school in this file** —
+the repo is public.
+
 ## Privacy note
 
 The nightly job needs the family password (as the `SPARK_VAULT_PW` secret) to
