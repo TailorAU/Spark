@@ -169,11 +169,12 @@
       const areas = LEARN.childAreas(child.id);
       const allSkills = areas.reduce((n, a) => n.concat(a.skills.map((s) => s.skillId)), []);
       const ms = S.masterySummary(child.id, allSkills);
+      const due = S.reviewQueue(child.id, allSkills).length;
       learnCta = `<button class="sheet-cta learn-cta" data-act="learn" data-id="${child.id}" style="--kid:${child.colour};--kid-bg:${child.accent}">
         <span class="sheet-cta-icon">📚</span>
         <span class="sheet-cta-main">
           <span class="sheet-cta-title">Learning journey</span>
-          <span class="sheet-cta-sub">${ms.mastered} of ${ms.total} skills mastered · ${esc(D.FRAMEWORKS[child.framework].label)}</span>
+          <span class="sheet-cta-sub">${ms.mastered} of ${ms.total} skills mastered${due ? ` · 🔁 ${due} to revisit` : ""} · ${esc(D.FRAMEWORKS[child.framework].label)}</span>
         </span>
         <span class="sheet-cta-go">›</span>
       </button>`;
@@ -223,16 +224,37 @@
     const child = childById(view.childId) || D.CHILDREN[0];
     const LEARN = window.SPARK_LEARN;
     const areas = LEARN && LEARN.has() ? LEARN.childAreas(child.id) : [];
+
+    // Spaced repetition: skills whose mastery has gone stale surface here.
+    const skillMeta = {};
+    for (const a of areas) for (const sk of a.skills) skillMeta[sk.skillId] = sk;
+    const queue = S.reviewQueue(child.id, Object.keys(skillMeta));
+    const dueIds = new Set(queue.map((q) => q.skillId));
+    const reviewStrip = queue.length
+      ? `<section class="section review-strip" style="--kid:${child.colour};--kid-bg:${child.accent}">
+          <div class="section-head"><h2>🔁 Time to revisit</h2><span class="muted">little and often beats cramming</span></div>
+          <div class="review-chips">${queue
+            .map((q) => `<button class="review-chip ${q.kind}" data-act="practice" data-id="${child.id}" data-skill="${q.skillId}">
+              <span class="review-chip-title">${esc(skillMeta[q.skillId].title)}</span>
+              <span class="review-chip-sub">${q.kind === "almost" ? "almost there — one more go" : `mastered ${q.days} days ago`}</span>
+            </button>`)
+            .join("")}</div>
+        </section>`
+      : "";
+
     const areaHtml = areas.map((a) => {
       const rows = a.skills.map((sk) => {
         const m = S.getSkillMastery(child.id, sk.skillId);
-        const badge = m && m.mastered
-          ? `<span class="skill-badge mastered">★ Mastered</span>`
-          : m
-            ? `<span class="skill-badge started">${"⭐".repeat(m.bestStars)}${"☆".repeat(Math.max(0, m.total - m.bestStars))}</span>`
-            : `<span class="skill-badge new">New</span>`;
-        return `<button class="skill-row ${m && m.mastered ? "is-mastered" : ""}" data-act="practice" data-id="${child.id}" data-skill="${sk.skillId}" style="--kid:${child.colour}">
-          <span class="skill-tick">${m && m.mastered ? "✓" : ""}</span>
+        const due = dueIds.has(sk.skillId);
+        const badge = due
+          ? `<span class="skill-badge due">🔁 ${m && m.mastered ? "Refresh" : "Almost there"}</span>`
+          : m && m.mastered
+            ? `<span class="skill-badge mastered">★ Mastered</span>`
+            : m
+              ? `<span class="skill-badge started">${"⭐".repeat(m.bestStars)}${"☆".repeat(Math.max(0, m.total - m.bestStars))}</span>`
+              : `<span class="skill-badge new">New</span>`;
+        return `<button class="skill-row ${m && m.mastered ? "is-mastered" : ""} ${due ? "is-due" : ""}" data-act="practice" data-id="${child.id}" data-skill="${sk.skillId}" style="--kid:${child.colour}">
+          <span class="skill-tick">${due ? "🔁" : m && m.mastered ? "✓" : ""}</span>
           <span class="skill-main">
             <span class="skill-title">${esc(sk.title)}</span>
             <span class="skill-milestone">${esc(sk.milestone)}</span>
@@ -257,6 +279,7 @@
           </div>
         </div>
       </header>
+      ${reviewStrip}
       ${areas.length ? areaHtml : `<div class="foot-hint">Learning content is loading…</div>`}
       <div class="foot-hint">Every skill is mapped to ${esc(D.FRAMEWORKS[child.framework].label)}. Tap one to learn and practise.</div>
     `;

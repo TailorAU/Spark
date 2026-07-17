@@ -241,6 +241,37 @@
     save();
     return state.mastery[k];
   }
+  // --- spaced repetition ------------------------------------------------------
+  // Mastery fades: a mastered skill is due for a refresh after 14 days, an
+  // attempted-but-unmastered one after 3. Practising again (recordSkillResult)
+  // re-stamps `at`, so working the queue clears it. Deterministic given
+  // (state, onDate); onDate defaults to now.
+  const REVIEW_MASTERED_DAYS = 14;
+  const REVIEW_SHAKY_DAYS = 3;
+
+  function reviewStatus(childId, skillId, onDate) {
+    const m = state.mastery[`${childId}:${skillId}`];
+    if (!m || !m.at) return null; // never attempted - it's "new", not "due"
+    const ref = onDate ? new Date(onDate) : new Date();
+    const days = Math.floor((ref - new Date(m.at)) / 86400000);
+    if (m.mastered) return { due: days >= REVIEW_MASTERED_DAYS, kind: "refresh", days };
+    return { due: days >= REVIEW_SHAKY_DAYS, kind: "almost", days };
+  }
+
+  // Skills due for review, shakiest first (unmastered before mastered),
+  // then stalest first within each group.
+  function reviewQueue(childId, skillIds, onDate) {
+    const out = [];
+    for (const id of skillIds) {
+      const r = reviewStatus(childId, id, onDate);
+      if (r && r.due) out.push({ skillId: id, kind: r.kind, days: r.days });
+    }
+    out.sort((a, b) =>
+      a.kind === b.kind ? b.days - a.days : a.kind === "almost" ? -1 : 1
+    );
+    return out;
+  }
+
   function masterySummary(childId, skillIds) {
     let mastered = 0, started = 0;
     for (const id of skillIds) {
@@ -284,6 +315,8 @@
     getSkillMastery,
     recordSkillResult,
     masterySummary,
+    reviewStatus,
+    reviewQueue,
     setSetting,
     getSetting,
     resetAll,

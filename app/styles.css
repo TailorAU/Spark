@@ -501,6 +501,20 @@ button { font: inherit; cursor: pointer; border: none; background: none; color: 
 .skill-badge.mastered { color: #fff; background: var(--kid, var(--brand)); }
 .skill-badge.started { color: #f2b01e; letter-spacing: -1px; }
 .skill-badge.new { color: var(--muted); background: var(--line); }
+.skill-badge.due { color: #fff; background: #e8833a; }
+.skill-row.is-due::before { background: #e8833a; opacity: 1; }
+
+/* spaced repetition - "time to revisit" strip on the Learn map */
+.review-chips { display: flex; flex-direction: column; gap: 8px; }
+.review-chip {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  text-align: left; border: 1.5px solid #e8833a; border-radius: 12px;
+  padding: 10px 13px; background: var(--card); cursor: pointer;
+}
+.review-chip:active { transform: scale(0.99); }
+.review-chip.almost { border-style: solid; background: #fff6ee; }
+.review-chip-title { font-weight: 800; font-size: 14px; color: var(--ink); }
+.review-chip-sub { font-size: 12px; color: #b05e1f; }
 
 /* --- Learn: lesson intro card --- */
 .ws-lesson { padding: 18px 6px 8px; text-align: center; }
