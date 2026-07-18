@@ -147,8 +147,8 @@
     const name = pick(r, shapeNames);
     const pts = DOT_SHAPES[name];
     const dots = pts.map(([x, y], i) =>
-      `<circle cx="${x}" cy="${y}" r="${i === 0 ? 2.6 : 1.9}" fill="${i === 0 ? "#e8833a" : "#333"}"/>
-       <text x="${x + 4}" y="${y - 3}" font-size="7" fill="#333">${i + 1}</text>`
+      `<circle cx="${x}" cy="${y}" r="${i === 0 ? 3.2 : 2.4}" fill="${i === 0 ? "#e8833a" : "#333"}"/>
+       <text x="${x + 4.5}" y="${y - 3.5}" font-size="9.5" font-weight="700" fill="#333">${i + 1}</text>`
     ).join("");
     return `<svg class="pp-dots" viewBox="0 0 100 90" style="height:${px}px">${dots}</svg>`;
   }
@@ -250,7 +250,12 @@
   // ---- per-child pages -------------------------------------------------------
 
   function pageEldest(child, r, theme, skills, dateLabel, sched) {
-    const w1 = pick(r, theme.words);
+    // Trace slot rotates between a theme word and a high-frequency sight word
+    // (AC9E1LY09) so handwriting practice doubles as sight-word practice.
+    const SIGHT_WORDS = ["THE", "SAID", "WAS", "ARE", "THEY", "HERE", "COME", "LOOK"];
+    const useSight = r() < 0.4;
+    const w1 = useSight ? pick(r, SIGHT_WORDS) : pick(r, theme.words);
+    const traceTitle = useSight ? "Sight word — trace it, then write it from memory" : "Handwriting — trace, then write your own";
     const addLv = (skills && skills.add) || 0, subLv = (skills && skills.sub) || 0;
     const sums = [], mathsAns = [];
     for (let i = 0; i < 3; i++) {
@@ -265,8 +270,34 @@
       sums.push(sumRow(c, "−", d));
       mathsAns.push(`${c} − ${d} = ${c - d}`);
     }
-    const seqStart = 10 + Math.floor(r() * 80);
-    const seqStart2 = 10 + Math.floor(r() * 80);
+    // The second maths line rotates daily through the Year 1 number strands:
+    // missing numbers, skip counting, coins, halves - all seeded + answer-keyed.
+    const mathsKind = pick(r, ["seq", "skip", "money", "half"]);
+    let mathsLine = "", mathsLineKey = null;
+    if (mathsKind === "seq") {
+      const s1 = 10 + Math.floor(r() * 80), s2 = 10 + Math.floor(r() * 80);
+      mathsLine = `<div class="pp-seq">Fill in the missing numbers:&nbsp; <b>${s1}</b>, ${s1 + 1}, <span class="pp-box sm"></span>, ${s1 + 3} &nbsp;&nbsp;·&nbsp;&nbsp; <b>${s2}</b>, <span class="pp-box sm"></span>, ${s2 + 2}, <span class="pp-box sm"></span></div>`;
+      mathsLineKey = { q: "Missing numbers", a: `${s1}, ${s1 + 1}, <b>${s1 + 2}</b>, ${s1 + 3} &nbsp;·&nbsp; ${s2}, <b>${s2 + 1}</b>, ${s2 + 2}, <b>${s2 + 3}</b>` };
+    } else if (mathsKind === "skip") {
+      const step = pick(r, [2, 5, 10]);
+      const start = step * (1 + Math.floor(r() * 4));
+      mathsLine = `<div class="pp-seq">Count by ${step}s:&nbsp; <b>${start}</b>, ${start + step}, <span class="pp-box sm"></span>, <span class="pp-box sm"></span>, <span class="pp-box sm"></span></div>`;
+      mathsLineKey = { q: `Count by ${step}s`, a: `${start + 2 * step}, ${start + 3 * step}, ${start + 4 * step}` };
+    } else if (mathsKind === "money") {
+      const COINS = [5, 10, 20, 50];
+      const mk = () => {
+        const n = 2 + Math.floor(r() * 2);
+        const cs = range(n).map(() => COINS[Math.floor(r() * COINS.length)]);
+        return { cs, total: cs.reduce((a, b) => a + b, 0) };
+      };
+      const m1 = mk(), m2 = mk();
+      mathsLine = `<div class="pp-seq">Count the coins:&nbsp; ${m1.cs.map((c) => `<b>${c}c</b>`).join(" + ")} = <span class="pp-box sm"></span>c &nbsp;&nbsp;·&nbsp;&nbsp; ${m2.cs.map((c) => `<b>${c}c</b>`).join(" + ")} = <span class="pp-box sm"></span>c</div>`;
+      mathsLineKey = { q: "Coins", a: `${m1.cs.join("+")} = ${m1.total}c &nbsp;·&nbsp; ${m2.cs.join("+")} = ${m2.total}c` };
+    } else {
+      const h1 = 2 * (2 + Math.floor(r() * 8)), h2 = 2 * (2 + Math.floor(r() * 8));
+      mathsLine = `<div class="pp-seq">Half of <b>${h1}</b> = <span class="pp-box sm"></span> &nbsp;&nbsp;·&nbsp;&nbsp; Half of <b>${h2}</b> = <span class="pp-box sm"></span></div>`;
+      mathsLineKey = { q: "Halves", a: `half of ${h1} is ${h1 / 2} &nbsp;·&nbsp; half of ${h2} is ${h2 / 2}` };
+    }
     const hour = 1 + Math.floor(r() * 11);
     const half = r() > 0.5;
     // Rotate the "extra" slot (sentence vs clock) and the puzzle of the day so
@@ -280,7 +311,7 @@
       stageLabel: "Year 1",
       rows: [
         { q: "Maths", a: mathsAns.join("&nbsp;&nbsp; ") },
-        { q: "Missing numbers", a: `${seqStart}, ${seqStart + 1}, <b>${seqStart + 2}</b>, ${seqStart + 3} &nbsp;·&nbsp; ${seqStart2}, <b>${seqStart2 + 1}</b>, ${seqStart2 + 2}, <b>${seqStart2 + 3}</b>` },
+        ...(mathsLineKey ? [mathsLineKey] : []),
         ...(useClock
           ? [{ q: "Clock", a: half ? `half past ${hour} — long hand on 6, short hand just past ${hour}` : `${hour} o'clock — long hand on 12, short hand on ${hour}` }]
           : []),
@@ -290,9 +321,8 @@
     const html = `<div class="pp-page">
       ${head(child, dateLabel, theme.label)}
       ${sched}
-      ${sec("Handwriting — trace, then write your own", traceWord(w1) + hwLines(1))}
-      ${sec("Maths — write the answers in the boxes", `<div class="pp-sumgrid">${sums.join("")}</div>
-        <div class="pp-seq">Fill in the missing numbers:&nbsp; <b>${seqStart}</b>, ${seqStart + 1}, <span class="pp-box sm"></span>, ${seqStart + 3} &nbsp;&nbsp;·&nbsp;&nbsp; <b>${seqStart2}</b>, <span class="pp-box sm"></span>, ${seqStart2 + 2}, <span class="pp-box sm"></span></div>`)}
+      ${sec(traceTitle, traceWord(w1) + hwLines(1))}
+      ${sec("Maths — write the answers in the boxes", `<div class="pp-sumgrid">${sums.join("")}</div>${mathsLine}`)}
       ${extra}
       ${puzzle.html}
       <div class="pp-foot">Spark · tailored for ${esc(child.name)} · ${esc(dateLabel)}</div>
@@ -304,17 +334,42 @@
     const w = pick(r, theme.words);
     const letters = [...new Set([w[0], pick(r, "ABMST".split("")), child.name[0].toUpperCase()])].slice(0, 3);
     const rows = letters.map((L) => traceWord((L + " ").repeat(6).trim(), 1)).join("");
-    // Compute the count-and-circle data first (same rng order), then render — so
-    // the answer key can report the targets without a second, divergent stream.
-    const countData = range(2).map(() => {
-      const n = 4 + Math.floor(r() * 4);
-      const total = n + 2 + Math.floor(r() * 2);
-      const item = pick(r, theme.things);
-      return { n, total, item };
-    });
-    const countRows = countData.map(({ n, total, item }) =>
-      `<div class="pp-count"><span class="pp-count-ask">Circle <b>${n}</b>:</span><span class="pp-count-items">${range(total).map(() => art(item, 34)).join("")}</span></div>`
-    ).join("");
+    // The number/thinking slot rotates: count-and-circle (most days), a shape
+    // hunt, or syllable clapping - QKLG early maths and phonological awareness.
+    const numKind = pick(r, ["count", "count", "shapes", "claps"]);
+    let numSec, numKey;
+    if (numKind === "shapes") {
+      const SHAPES = {
+        triangle: `<svg viewBox="0 0 36 36" class="pp-shape"><path d="M18 5 L33 31 L3 31 Z" fill="none" stroke="#333" stroke-width="2.4" stroke-linejoin="round"/></svg>`,
+        circle: `<svg viewBox="0 0 36 36" class="pp-shape"><circle cx="18" cy="18" r="14" fill="none" stroke="#333" stroke-width="2.4"/></svg>`,
+        square: `<svg viewBox="0 0 36 36" class="pp-shape"><rect x="5" y="5" width="26" height="26" fill="none" stroke="#333" stroke-width="2.4"/></svg>`,
+      };
+      const target = pick(r, Object.keys(SHAPES));
+      const row = range(7).map(() => pick(r, Object.keys(SHAPES)));
+      if (!row.includes(target)) row[Math.floor(r() * row.length)] = target;
+      const hits = row.filter((s) => s === target).length;
+      numSec = sec(`Shape hunt — circle every ${target}`, `<div class="pp-count"><span class="pp-count-items">${row.map((s) => SHAPES[s]).join("")}</span></div>`);
+      numKey = { q: "Shape hunt", a: `${hits} ${target}${hits === 1 ? "" : "s"}` };
+    } else if (numKind === "claps") {
+      const WORDS = [["dog", 1], ["sun", 1], ["apple", 2], ["tiger", 2], ["water", 2], ["banana", 3], ["butterfly", 3], ["kangaroo", 3]];
+      const picks = shuffle(r, WORDS).slice(0, 3);
+      const rows2 = picks.map(([w]) =>
+        `<div class="pp-count"><span class="pp-count-ask"><b>${esc(w)}</b></span><span class="pp-count-items">${range(4).map(() => `<span class="pp-clapdot"></span>`).join("")}</span></div>`
+      ).join("");
+      numSec = sec("Clap the beats — colour one dot for each clap", rows2);
+      numKey = { q: "Clap the beats", a: picks.map(([w, n]) => `${w} = ${n}`).join(", ") };
+    } else {
+      const countData = range(2).map(() => {
+        const n = 4 + Math.floor(r() * 4);
+        const total = n + 2 + Math.floor(r() * 2);
+        const item = pick(r, theme.things);
+        return { n, total, item };
+      });
+      numSec = sec("Count and circle", countData.map(({ n, total, item }) =>
+        `<div class="pp-count"><span class="pp-count-ask">Circle <b>${n}</b>:</span><span class="pp-count-items">${range(total).map(() => art(item, 34)).join("")}</span></div>`
+      ).join(""));
+      numKey = { q: "Count &amp; circle", a: countData.map((c) => `circle ${c.n}`).join(", ") };
+    }
     // Rotate the language slot (pattern vs rhymes) and add the puzzle of the
     // day, keeping the page inside the A4 budget.
     const useRhymes = r() > 0.5;
@@ -333,7 +388,7 @@
     const answers = {
       stageLabel: "Kindergarten",
       rows: [
-        { q: "Count &amp; circle", a: countData.map((c) => `circle ${c.n}`).join(", ") },
+        numKey,
         langKey,
         ...(puzzle.key ? [puzzle.key] : []),
       ],
@@ -343,7 +398,7 @@
       ${sched}
       ${sec("Trace the letters", rows + hwLines(1), "then try a row of your own")}
       ${sec("Trace your name", traceWord(child.name, 2) + hwLines(1))}
-      ${sec("Count and circle", countRows)}
+      ${numSec}
       ${langSec}
       ${puzzle.html}
       <div class="pp-foot">Spark · tailored for ${esc(child.name)} · ${esc(dateLabel)}</div>
@@ -356,11 +411,26 @@
     const colouring = `<div class="pp-colour">${outlineNames.map((n) => `<div class="pp-colour-item">${OUTLINES[n]}</div>`).join("")}</div>`;
     const strokes = ["wave", "zigzag"].map((s) => strokeRow(s)).join("");
     const initial = child.name[0].toUpperCase();
-    const dots = range(3).map((i) => {
-      const n = i + 1;
-      const item = pick(r, theme.things);
-      return `<div class="pp-count"><span class="pp-count-ask">Count: <b>${n}</b></span><span class="pp-count-items">${range(n).map(() => art(item, 40)).join("")}</span></div>`;
-    }).join("");
+    // Rotate the together-time slot: counting 1-2-3 or big-vs-small spotting
+    // (EYLF exploring concepts) - both open-ended, guided by a grown-up.
+    const useBigSmall = r() < 0.4;
+    let togetherTitle, dots;
+    if (useBigSmall) {
+      togetherTitle = "Circle the BIG one in each row";
+      dots = range(3).map(() => {
+        const item = pick(r, theme.things);
+        const bigFirst = r() > 0.5;
+        const pair = bigFirst ? [art(item, 48), art(item, 26)] : [art(item, 26), art(item, 48)];
+        return `<div class="pp-count"><span class="pp-count-items pp-bigsmall">${pair.join("")}</span></div>`;
+      }).join("");
+    } else {
+      togetherTitle = "Point and count together";
+      dots = range(3).map((i) => {
+        const n = i + 1;
+        const item = pick(r, theme.things);
+        return `<div class="pp-count"><span class="pp-count-ask">Count: <b>${n}</b></span><span class="pp-count-items">${range(n).map(() => art(item, 40)).join("")}</span></div>`;
+      }).join("");
+    }
     // Rotate the fun slot: colouring one day, an easy dot-to-dot another.
     const funSec = r() > 0.5
       ? sec("Colour me in!", colouring)
@@ -375,7 +445,7 @@
       ${sched}
       ${sec("Trace the lines with your finger, then a crayon", strokes)}
       ${sec(`The letter ${initial} — trace it big!`, `<div class="pp-biginitial">${initial}</div>`)}
-      ${sec("Point and count together", dots)}
+      ${sec(togetherTitle, dots)}
       ${funSec}
       <div class="pp-foot">Spark · tailored for ${esc(child.name)} · ${esc(dateLabel)}</div>
     </div>`;
