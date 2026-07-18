@@ -602,7 +602,7 @@ button { font: inherit; cursor: pointer; border: none; background: none; color: 
 .pp-count-items .art { filter: grayscale(0.15); }
 .pp-pattern { display: flex; align-items: center; gap: 14px; }
 .pp-match { display: flex; justify-content: space-between; max-width: 330px; }
-.pp-match-w { font-size: 17px; font-weight: 700; margin: 9px 0; }
+.pp-match-w { font-size: 16px; font-weight: 700; margin: 5px 0; }
 
 /* toddler */
 .pp-stroke { display: block; width: 100%; height: 44px; margin: 8px 0; }
@@ -618,6 +618,17 @@ button { font: inherit; cursor: pointer; border: none; background: none; color: 
 .pp-todo { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: #222; }
 .pp-cb { width: 15px; height: 15px; flex: none; border: 1.6px solid #444; border-radius: 4px; }
 .pp-writein { flex: 1; border-bottom: 1.4px solid #999; height: 18px; }
+
+/* seeded print puzzles */
+.pp-maze, .pp-dots { display: block; margin: 2px auto; }
+.pp-wsgrid { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.pp-wsr { display: flex; gap: 1px; }
+.pp-wsr span {
+  width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid #ccc; font-size: 12px; font-weight: 700; color: #222;
+  font-variant-numeric: tabular-nums;
+}
+.pp-wswords { text-align: center; font-size: 12.5px; color: #333; margin-top: 5px; }
 
 /* grown-ups' answer key (a separate, tear-off page) */
 .pp-keynote { font-size: 12px; color: #444; background: #f6f6f2; border: 1px solid #e2e2d8; border-radius: 8px; padding: 8px 11px; margin: 6px 0 12px; }

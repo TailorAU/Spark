@@ -23,14 +23,27 @@ test("today's pack: one structured A4 page per child", async ({ page }) => {
 
   await expect(page.locator(".pp-page")).toHaveCount(4);
 
-  // Stage-specific structure identifies each child's page without names:
-  // Year 1 = sums + clock, Kindergarten = rhyme matching, toddler = big initial + colouring.
+  // Stage-specific structure identifies each child's page without names.
+  // Sections rotate daily (sentence/clock, pattern/rhymes, colouring/dot-to-dot,
+  // and a puzzle of the day), so assertions check the stable core plus that
+  // exactly one option from each rotating slot rendered.
   await expect(page.locator(".pp-page:has(.pp-sumgrid)")).toHaveCount(1);
-  await expect(page.locator(".pp-page:has(.pp-match)")).toHaveCount(1);
   await expect(page.locator(".pp-page:has(.pp-biginitial)")).toHaveCount(1);
   await expect(page.locator(".pp-page:has(.pp-sumgrid) .pp-sum")).toHaveCount(6);
-  await expect(page.locator(".pp-page:has(.pp-sumgrid) .pp-clock")).toHaveCount(1);
-  await expect(page.locator(".pp-page:has(.pp-biginitial) .pp-colour-item")).toHaveCount(2);
+  const slots = await page.evaluate(() => {
+    const one = (root, sels) => sels.filter((s) => root.querySelector(s)).length;
+    const eldest = document.querySelector(".pp-page:has(.pp-sumgrid)");
+    const youngest = document.querySelector(".pp-page:has(.pp-biginitial)");
+    const middle = [...document.querySelectorAll(".pp-page:not(.pp-keypage)")].find((p) => p !== eldest && p !== youngest);
+    return {
+      eldestExtra: one(eldest, [".pp-clock", ".pp-prompt"]),
+      eldestPuzzle: one(eldest, [".pp-wsgrid", ".pp-maze", ".pp-dots"]),
+      middleLang: one(middle, [".pp-match", ".pp-pattern"]),
+      middlePuzzle: one(middle, [".pp-maze", ".pp-dots"]),
+      youngestFun: one(youngest, [".pp-colour", ".pp-dots"]),
+    };
+  });
+  expect(slots).toEqual({ eldestExtra: 1, eldestPuzzle: 1, middleLang: 1, middlePuzzle: 1, youngestFun: 1 });
 
   for (let i = 0; i < 3; i++) {
     const pg = page.locator(".pp-page").nth(i);

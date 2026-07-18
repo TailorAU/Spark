@@ -88,6 +88,124 @@
   const sumRow = (a, op, b) =>
     `<div class="pp-sum"><span>${a} ${op} ${b} =</span><span class="pp-box"></span></div>`;
 
+  // ---- seeded puzzles (all deterministic: same rng stream = same puzzle) -----
+
+  // Perfect maze via seeded depth-first search; drawn as SVG wall segments
+  // with an arrow in at the top-left and out at the bottom-right.
+  function mazeSvg(r, cols, rows, px) {
+    const right = [], bottom = [];
+    for (let i = 0; i < cols * rows; i++) { right[i] = true; bottom[i] = true; }
+    const seen = new Array(cols * rows).fill(false);
+    const stack = [0];
+    seen[0] = true;
+    while (stack.length) {
+      const cur = stack[stack.length - 1];
+      const cx = cur % cols, cy = Math.floor(cur / cols);
+      const opts = [];
+      if (cx > 0 && !seen[cur - 1]) opts.push([cur - 1, "L"]);
+      if (cx < cols - 1 && !seen[cur + 1]) opts.push([cur + 1, "R"]);
+      if (cy > 0 && !seen[cur - cols]) opts.push([cur - cols, "U"]);
+      if (cy < rows - 1 && !seen[cur + cols]) opts.push([cur + cols, "D"]);
+      if (!opts.length) { stack.pop(); continue; }
+      const [nxt, dir] = opts[Math.floor(r() * opts.length)];
+      if (dir === "R") right[cur] = false;
+      if (dir === "L") right[nxt] = false;
+      if (dir === "D") bottom[cur] = false;
+      if (dir === "U") bottom[nxt] = false;
+      seen[nxt] = true;
+      stack.push(nxt);
+    }
+    const C = 16, P = 4, W = cols * C + P * 2, H = rows * C + P * 2;
+    const seg = [];
+    // outer border, leaving the entrance (top of first cell) and exit open
+    seg.push(`M${P + C} ${P} L${P + cols * C} ${P}`); // top minus entrance
+    seg.push(`M${P} ${P} L${P} ${P + rows * C}`); // left
+    seg.push(`M${P + cols * C} ${P} L${P + cols * C} ${P + rows * C}`); // right
+    seg.push(`M${P} ${P + rows * C} L${P + (cols - 1) * C} ${P + rows * C}`); // bottom minus exit
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const i = y * cols + x;
+        if (right[i] && x < cols - 1) seg.push(`M${P + (x + 1) * C} ${P + y * C} L${P + (x + 1) * C} ${P + (y + 1) * C}`);
+        if (bottom[i] && y < rows - 1) seg.push(`M${P + x * C} ${P + (y + 1) * C} L${P + (x + 1) * C} ${P + (y + 1) * C}`);
+      }
+    }
+    return `<svg class="pp-maze" viewBox="0 0 ${W} ${H}" style="height:${px}px">
+      <path d="${seg.join(" ")}" fill="none" stroke="#333" stroke-width="2.4" stroke-linecap="round"/>
+      <text x="${P + C / 2}" y="${P - 0.5}" font-size="8" text-anchor="middle" fill="#333">▼</text>
+      <text x="${P + (cols - 0.5) * C}" y="${H - 0.2}" font-size="8" text-anchor="middle" fill="#333">▼</text>
+    </svg>`;
+  }
+
+  // Numbered dot-to-dot outlines (hand-plotted, connect 1..N then back to 1).
+  const DOT_SHAPES = {
+    star: [[50, 4], [61, 34], [93, 34], [67, 53], [77, 84], [50, 65], [23, 84], [33, 53], [7, 34], [39, 34]],
+    boat: [[10, 55], [90, 55], [78, 72], [22, 72], [10, 55], [50, 55], [50, 10], [78, 48], [50, 48]],
+    fish: [[12, 42], [30, 26], [58, 20], [78, 30], [88, 42], [78, 54], [58, 64], [30, 58], [12, 42], [4, 28], [4, 56]],
+    house: [[15, 45], [50, 12], [85, 45], [75, 45], [75, 82], [25, 82], [25, 45]],
+  };
+  function dotToDotSvg(r, shapeNames, px) {
+    const name = pick(r, shapeNames);
+    const pts = DOT_SHAPES[name];
+    const dots = pts.map(([x, y], i) =>
+      `<circle cx="${x}" cy="${y}" r="${i === 0 ? 2.6 : 1.9}" fill="${i === 0 ? "#e8833a" : "#333"}"/>
+       <text x="${x + 4}" y="${y - 3}" font-size="7" fill="#333">${i + 1}</text>`
+    ).join("");
+    return `<svg class="pp-dots" viewBox="0 0 100 90" style="height:${px}px">${dots}</svg>`;
+  }
+
+  // Seeded word search: theme words hidden right/down/diagonal in a grid.
+  function wordSearch(r, words, size) {
+    const grid = Array.from({ length: size }, () => new Array(size).fill(null));
+    const DIRS = [[1, 0], [0, 1], [1, 1]];
+    for (const word of words) {
+      let placed = false;
+      for (let t = 0; t < 60 && !placed; t++) {
+        const [dx, dy] = DIRS[Math.floor(r() * DIRS.length)];
+        const x0 = Math.floor(r() * (size - (word.length - 1) * dx));
+        const y0 = Math.floor(r() * (size - (word.length - 1) * dy));
+        let ok = true;
+        for (let i = 0; i < word.length; i++) {
+          const cur = grid[y0 + i * dy][x0 + i * dx];
+          if (cur && cur !== word[i]) { ok = false; break; }
+        }
+        if (!ok) continue;
+        for (let i = 0; i < word.length; i++) grid[y0 + i * dy][x0 + i * dx] = word[i];
+        placed = true;
+      }
+      // Deterministic fallback: first free row, left-aligned.
+      if (!placed) {
+        for (let y = 0; y < size && !placed; y++) {
+          if (grid[y].slice(0, word.length).every((c, i) => !c || c === word[i])) {
+            for (let i = 0; i < word.length; i++) grid[y][i] = word[i];
+            placed = true;
+          }
+        }
+      }
+    }
+    const AB = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const rows = grid.map((row) =>
+      `<div class="pp-wsr">${row.map((c) => `<span>${c || AB[Math.floor(r() * 26)]}</span>`).join("")}</div>`
+    ).join("");
+    return `<div class="pp-wsgrid">${rows}</div>
+      <div class="pp-wswords">Find: ${words.map((w) => `<b>${esc(w)}</b>`).join(" · ")}</div>`;
+  }
+
+  // The rotating "puzzle of the day" slot: same date = same puzzle, and the
+  // pick advances with the shared page rng so every day feels different.
+  function puzzleSec(r, child, theme) {
+    const kinds = child.stage === "year1" ? ["wordsearch", "maze", "dots"] : ["maze", "dots"];
+    const kind = pick(r, kinds);
+    if (kind === "wordsearch") {
+      return { key: { q: "Word search", a: theme.words.join(", ") }, html: sec("Word search", wordSearch(r, theme.words, 7)) };
+    }
+    if (kind === "maze") {
+      const dims = child.stage === "year1" ? [11, 7] : [8, 5];
+      return { key: null, html: sec("Maze — find the way through", mazeSvg(r, dims[0], dims[1], child.stage === "year1" ? 132 : 104)) };
+    }
+    const shapes = child.stage === "year1" ? ["fish", "boat", "star", "house"] : ["star", "house", "boat"];
+    return { key: null, html: sec("Dot-to-dot — join 1, 2, 3… then back to 1", dotToDotSvg(r, shapes, child.stage === "year1" ? 118 : 102)) };
+  }
+
   // Today's schedule: school/kindy, today's tailored learning focuses, the
   // cross-country session for this exact day, plus write-in rows.
   function scheduleSec(child, date, plan) {
@@ -132,11 +250,8 @@
   // ---- per-child pages -------------------------------------------------------
 
   function pageEldest(child, r, theme, skills, dateLabel, sched) {
-    const w1 = pick(r, theme.words), w2 = pick(r, theme.words.filter((w) => w !== w1));
+    const w1 = pick(r, theme.words);
     const addLv = (skills && skills.add) || 0, subLv = (skills && skills.sub) || 0;
-    // NB: keep the exact rng call sequence below (each [...][lv] evaluates all
-    // three level expressions) so the worksheet stays byte-identical; we only
-    // additionally capture the answers for the grown-ups' key page.
     const sums = [], mathsAns = [];
     for (let i = 0; i < 3; i++) {
       const a = [2 + Math.floor(r() * 5), 4 + Math.floor(r() * 8), 7 + Math.floor(r() * 6)][addLv];
@@ -154,22 +269,32 @@
     const seqStart2 = 10 + Math.floor(r() * 80);
     const hour = 1 + Math.floor(r() * 11);
     const half = r() > 0.5;
+    // Rotate the "extra" slot (sentence vs clock) and the puzzle of the day so
+    // no two mornings look alike, while the page height stays in A4 budget.
+    const useClock = r() > 0.5;
+    const extra = useClock
+      ? sec("Time — draw the hands", `<div class="pp-clockrow">${blankClock(`${half ? `half past ${hour}` : `${hour} o'clock`}`)}<div class="pp-clock-side">Draw the hour hand (short) and minute hand (long). The long hand points ${half ? "down to 6" : "up to 12"}.</div></div>`)
+      : sec("Write a sentence", `<div class="pp-prompt">Write a sentence about the ${esc(theme.label.toLowerCase())}. Remember your capital letter and full stop!</div>` + hwLines(2));
+    const puzzle = puzzleSec(r, child, theme);
     const answers = {
       stageLabel: "Year 1",
       rows: [
         { q: "Maths", a: mathsAns.join("&nbsp;&nbsp; ") },
         { q: "Missing numbers", a: `${seqStart}, ${seqStart + 1}, <b>${seqStart + 2}</b>, ${seqStart + 3} &nbsp;·&nbsp; ${seqStart2}, <b>${seqStart2 + 1}</b>, ${seqStart2 + 2}, <b>${seqStart2 + 3}</b>` },
-        { q: "Clock", a: half ? `half past ${hour} — long hand on 6, short hand just past ${hour}` : `${hour} o'clock — long hand on 12, short hand on ${hour}` },
+        ...(useClock
+          ? [{ q: "Clock", a: half ? `half past ${hour} — long hand on 6, short hand just past ${hour}` : `${hour} o'clock — long hand on 12, short hand on ${hour}` }]
+          : []),
+        ...(puzzle.key ? [puzzle.key] : []),
       ],
     };
     const html = `<div class="pp-page">
       ${head(child, dateLabel, theme.label)}
       ${sched}
-      ${sec("Handwriting — trace, then write your own", traceWord(w1) + hwLines(1) + traceWord(w2) + hwLines(1))}
-      ${sec("Write a sentence", `<div class="pp-prompt">Write a sentence about the ${esc(theme.label.toLowerCase())}. Remember your capital letter and full stop!</div>` + hwLines(2))}
+      ${sec("Handwriting — trace, then write your own", traceWord(w1) + hwLines(1))}
       ${sec("Maths — write the answers in the boxes", `<div class="pp-sumgrid">${sums.join("")}</div>
         <div class="pp-seq">Fill in the missing numbers:&nbsp; <b>${seqStart}</b>, ${seqStart + 1}, <span class="pp-box sm"></span>, ${seqStart + 3} &nbsp;&nbsp;·&nbsp;&nbsp; <b>${seqStart2}</b>, <span class="pp-box sm"></span>, ${seqStart2 + 2}, <span class="pp-box sm"></span></div>`)}
-      ${sec("Time — draw the hands", `<div class="pp-clockrow">${blankClock(`${half ? `half past ${hour}` : `${hour} o'clock`}`)}<div class="pp-clock-side">Draw the hour hand (short) and minute hand (long). The long hand points ${half ? "down to 6" : "up to 12"}.</div></div>`)}
+      ${extra}
+      ${puzzle.html}
       <div class="pp-foot">Spark · tailored for ${esc(child.name)} · ${esc(dateLabel)}</div>
     </div>`;
     return { html, answers };
@@ -190,17 +315,27 @@
     const countRows = countData.map(({ n, total, item }) =>
       `<div class="pp-count"><span class="pp-count-ask">Circle <b>${n}</b>:</span><span class="pp-count-items">${range(total).map(() => art(item, 34)).join("")}</span></div>`
     ).join("");
-    const pat = shuffle(r, theme.things).slice(0, 2);
-    const patternRow = `<div class="pp-pattern">${[0, 1, 0, 1, 0].map((i) => art(pat[i], 36)).join("")}<span class="pp-box draw"></span></div>`;
-    const rhymes = shuffle(r, [["CAT", "HAT"], ["STAR", "CAR"], ["BELL", "SHELL"]]);
-    const left = rhymes.map((p) => p[0]), right = shuffle(r, rhymes.map((p) => p[1]));
-    const match = `<div class="pp-match"><div>${left.map((x) => `<div class="pp-match-w">${x} ●</div>`).join("")}</div><div>${right.map((x) => `<div class="pp-match-w">● ${x}</div>`).join("")}</div></div>`;
+    // Rotate the language slot (pattern vs rhymes) and add the puzzle of the
+    // day, keeping the page inside the A4 budget.
+    const useRhymes = r() > 0.5;
+    let langSec, langKey;
+    if (useRhymes) {
+      const rhymes = shuffle(r, [["CAT", "HAT"], ["STAR", "CAR"], ["BELL", "SHELL"]]);
+      const left = rhymes.map((p) => p[0]), right = shuffle(r, rhymes.map((p) => p[1]));
+      langSec = sec("Draw a line between the rhyming words", `<div class="pp-match"><div>${left.map((x) => `<div class="pp-match-w">${x} ●</div>`).join("")}</div><div>${right.map((x) => `<div class="pp-match-w">● ${x}</div>`).join("")}</div></div>`);
+      langKey = { q: "Rhymes", a: [["CAT", "HAT"], ["STAR", "CAR"], ["BELL", "SHELL"]].map((p) => `${p[0]}–${p[1]}`).join(", ") };
+    } else {
+      const pat = shuffle(r, theme.things).slice(0, 2);
+      langSec = sec("What comes next? Draw it in the box", `<div class="pp-pattern">${[0, 1, 0, 1, 0].map((i) => art(pat[i], 36)).join("")}<span class="pp-box draw"></span></div>`);
+      langKey = { q: "What comes next", a: `a ${esc(pat[1])}` };
+    }
+    const puzzle = puzzleSec(r, child, theme);
     const answers = {
       stageLabel: "Kindergarten",
       rows: [
         { q: "Count &amp; circle", a: countData.map((c) => `circle ${c.n}`).join(", ") },
-        { q: "What comes next", a: `a ${esc(pat[1])}` },
-        { q: "Rhymes", a: [["CAT", "HAT"], ["STAR", "CAR"], ["BELL", "SHELL"]].map((p) => `${p[0]}–${p[1]}`).join(", ") },
+        langKey,
+        ...(puzzle.key ? [puzzle.key] : []),
       ],
     };
     const html = `<div class="pp-page">
@@ -209,8 +344,8 @@
       ${sec("Trace the letters", rows + hwLines(1), "then try a row of your own")}
       ${sec("Trace your name", traceWord(child.name, 2) + hwLines(1))}
       ${sec("Count and circle", countRows)}
-      ${sec("What comes next? Draw it in the box", patternRow)}
-      ${sec("Draw a line between the rhyming words", match)}
+      ${langSec}
+      ${puzzle.html}
       <div class="pp-foot">Spark · tailored for ${esc(child.name)} · ${esc(dateLabel)}</div>
     </div>`;
     return { html, answers };
@@ -226,10 +361,14 @@
       const item = pick(r, theme.things);
       return `<div class="pp-count"><span class="pp-count-ask">Count: <b>${n}</b></span><span class="pp-count-items">${range(n).map(() => art(item, 40)).join("")}</span></div>`;
     }).join("");
+    // Rotate the fun slot: colouring one day, an easy dot-to-dot another.
+    const funSec = r() > 0.5
+      ? sec("Colour me in!", colouring)
+      : sec("Dot-to-dot — join the dots with a crayon", dotToDotSvg(r, ["star", "house"], 110));
     const answers = {
       stageLabel: "Early years",
       openEnded: true,
-      rows: [{ q: "", a: `Tracing, the big letter ${initial}, counting 1–2–3 and colouring are all open-ended — count along together and praise the effort.` }],
+      rows: [{ q: "", a: `Tracing, the big letter ${initial}, counting 1–2–3 and the drawing fun are all open-ended — count along together and praise the effort.` }],
     };
     const html = `<div class="pp-page">
       ${head(child, dateLabel, theme.label)}
@@ -237,7 +376,7 @@
       ${sec("Trace the lines with your finger, then a crayon", strokes)}
       ${sec(`The letter ${initial} — trace it big!`, `<div class="pp-biginitial">${initial}</div>`)}
       ${sec("Point and count together", dots)}
-      ${sec("Colour me in!", colouring)}
+      ${funSec}
       <div class="pp-foot">Spark · tailored for ${esc(child.name)} · ${esc(dateLabel)}</div>
     </div>`;
     return { html, answers };
