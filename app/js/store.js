@@ -241,6 +241,24 @@
     save();
     return state.mastery[k];
   }
+  // --- school term calendar (from family.json schoolTerms) --------------------
+  // Which QLD school term + week a date falls in, or null in the holidays.
+  // Week 1 starts the Monday of the term's first week.
+  function schoolTerm(onDate) {
+    const terms = (printConfig && printConfig.schoolTerms) || [];
+    const ref = onDate ? new Date(onDate) : new Date();
+    ref.setHours(12, 0, 0, 0);
+    for (const t of terms) {
+      const start = new Date(`${t.start}T12:00:00`);
+      const end = new Date(`${t.end}T12:00:00`);
+      if (ref < start || ref > end) continue;
+      const mon = (d) => { const x = new Date(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); x.setHours(12, 0, 0, 0); return x; };
+      const week = Math.floor((mon(ref) - mon(start)) / (7 * 24 * 3600 * 1000)) + 1;
+      return { term: t.term, week };
+    }
+    return null;
+  }
+
   // --- spaced repetition ------------------------------------------------------
   // Mastery fades: a mastered skill is due for a refresh after 14 days, an
   // attempted-but-unmastered one after 3. Practising again (recordSkillResult)
@@ -297,6 +315,7 @@
 
   window.SPARK_STORE = {
     applyConfig,
+    schoolTerm,
     activeContexts,
     customContexts,
     addCustomContext,

@@ -211,9 +211,14 @@
   function scheduleSec(child, date, plan) {
     const dow = date.getDay(); // 0 Sun .. 6 Sat
     const weekday = dow >= 1 && dow <= 5;
-    const settingLine = weekday
-      ? { year1: "School day", kindy: "Kindy day", eylf: "Day care / home play" }[child.stage]
-      : "Weekend — family day";
+    // Term-aware: the school child's line carries "Term N, Week W" during
+    // term and flips to holiday mode between terms (schoolTerm reads the
+    // public QLD term dates from family.json).
+    const term = window.SPARK_STORE.schoolTerm ? window.SPARK_STORE.schoolTerm(date) : null;
+    const schoolLine = child.stage === "year1"
+      ? (term ? `School day — Term ${term.term}, Week ${term.week}` : "School holidays — home adventure day")
+      : { kindy: "Kindy day", eylf: "Day care / home play" }[child.stage];
+    const settingLine = weekday ? schoolLine : "Weekend — family day";
     const rows = [];
     rows.push(`<div class="pp-todo"><span class="pp-cb"></span>${esc(settingLine)}</div>`);
     // Two of today's tailored plan activities, rotating through the week.
@@ -303,9 +308,19 @@
     // Rotate the "extra" slot (sentence vs clock) and the puzzle of the day so
     // no two mornings look alike, while the page height stays in A4 budget.
     const useClock = r() > 0.5;
+    // Sentence prompts rotate through the child's real world when the vault
+    // provides a classroom (teacher, class pet, mates). Those names exist only
+    // in the encrypted vault - never in this source file.
+    const prompts = [`Write a sentence about the ${esc(theme.label.toLowerCase())}.`];
+    const cr = child.classroom;
+    if (cr) {
+      if (cr.teacher) prompts.push(`Write a sentence about your teacher, ${esc(cr.teacher)}.`);
+      if (cr.teacher && cr.pet && cr.pet.name) prompts.push(`Write a sentence about ${esc(cr.teacher)}'s ${esc(cr.pet.kind || "pet")}, ${esc(cr.pet.name)}.`);
+      if (Array.isArray(cr.mates) && cr.mates.length) prompts.push(`Write a sentence about playing with ${esc(pick(r, cr.mates))}.`);
+    }
     const extra = useClock
       ? sec("Time — draw the hands", `<div class="pp-clockrow">${blankClock(`${half ? `half past ${hour}` : `${hour} o'clock`}`)}<div class="pp-clock-side">Draw the hour hand (short) and minute hand (long). The long hand points ${half ? "down to 6" : "up to 12"}.</div></div>`)
-      : sec("Write a sentence", `<div class="pp-prompt">Write a sentence about the ${esc(theme.label.toLowerCase())}. Remember your capital letter and full stop!</div>` + hwLines(2));
+      : sec("Write a sentence", `<div class="pp-prompt">${pick(r, prompts)} Remember your capital letter and full stop!</div>` + hwLines(2));
     const puzzle = puzzleSec(r, child, theme);
     const answers = {
       stageLabel: "Year 1",

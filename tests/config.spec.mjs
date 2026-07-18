@@ -55,6 +55,24 @@ test("printSkills: config fills the gap, real adaptive records win", async ({ pa
   expect(r.after.add).toBe(1);
 });
 
+test("school term calendar: term/week from config, holidays are null", async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const T = window.SPARK_STORE.schoolTerm;
+    return {
+      week2: T("2026-07-20"), // Knox's ground truth: Term 3 commences Week 2 here
+      week1: T("2026-07-13"),
+      lastWeek: T("2026-09-18"),
+      holidays: T("2026-09-25"),
+      sundayBeforeWeek2: T("2026-07-19"), // Sunday still inside term week 1
+    };
+  });
+  expect(r.week2).toEqual({ term: 3, week: 2 });
+  expect(r.week1).toEqual({ term: 3, week: 1 });
+  expect(r.lastWeek).toEqual({ term: 3, week: 10 });
+  expect(r.holidays).toBeNull();
+  expect(r.sundayBeforeWeek2).toEqual({ term: 3, week: 1 });
+});
+
 test("printed countdown advances between pack dates (never frozen)", async ({ page }) => {
   // Pick two Mondays, 1 and 3 weeks before the configured race.
   const monday = (weeksBefore) => {

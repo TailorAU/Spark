@@ -1,5 +1,11 @@
 {
   "_note": "PII-free family print config. The 5:30am print run renders in a fresh browser with no saved state, so this committed file is how the daily pack tracks real family life: keep the race date, life events and print difficulty current (edit + push, live in ~90s). On the kids' devices it fills gaps only - their own toggles and progress always win. NEVER put names, birthdays or a school in this file: the repo is public.",
+  "schoolTerms": [
+    { "term": 1, "start": "2026-01-27", "end": "2026-04-02" },
+    { "term": 2, "start": "2026-04-20", "end": "2026-06-26" },
+    { "term": 3, "start": "2026-07-13", "end": "2026-09-18" },
+    { "term": 4, "start": "2026-10-06", "end": "2026-12-11" }
+  ],
   "contexts": {
     "fiji": { "active": true },
     "camping": { "active": true },
