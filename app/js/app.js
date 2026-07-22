@@ -100,8 +100,8 @@
 
     app.innerHTML = `
       <header class="hero">
-        <div class="brand"><span class="spark-dot"></span> Spark</div>
-        <div class="hero-sub">Bringing transparency to parenting — every week mapped to the curriculum, tailored to what you're actually doing.</div>
+        <div class="brand"><span class="spark-dot"></span> Tailor Education</div>
+        <div class="hero-sub">Education shaped around the individual — every week mapped to the curriculum and tailored to what you're actually doing.</div>
       </header>
       ${weekStrip()}
       <section class="section">
@@ -399,7 +399,7 @@
 
     app.innerHTML = `
       <header class="page-hero"><h1>What we're doing</h1>
-        <p>Turn on what's happening in real life. Spark weaves it into each child's curriculum for the week.</p></header>
+        <p>Turn on what's happening in real life. Tailor Education weaves it into each child's curriculum for the week.</p></header>
       <section class="section"><div class="ctx-rows">${rows}</div></section>
       ${calendarSection()}
       <div class="foot-hint">Import the family calendar above, or just toggle what's on — either way the week tailors itself.</div>
@@ -452,25 +452,25 @@
       <header class="page-hero"><h1>More</h1></header>
       <section class="section">
         <div class="card">
-          <h3>Install Spark</h3>
-          <p>Add Spark to your home screen: open the browser menu and choose <b>Add to Home Screen</b>. It then runs full-screen like an app, offline.</p>
+          <h3>Install Tailor Education</h3>
+          <p>Add Tailor Education to your home screen: open the browser menu and choose <b>Add to Home Screen</b>. It then runs full-screen like an app, offline.</p>
           <button class="btn" id="installBtn" ${deferredInstall ? "" : "disabled"}>Install app</button>
         </div>
         <div class="card">
           <h3>Live activity generation (optional)</h3>
-          <p>Spark works fully offline with a built-in activity library. To pull fresh, LLM-generated activities from the extracted Spark PLG engine, set its base URL.</p>
-          <label class="field">Spark API base URL
-            <input type="url" id="apiBase" placeholder="https://spark.tailor.au" value="${esc(base)}">
+          <p>Tailor Education works fully offline with a built-in activity library. Optional live generation requires a separately deployed compatible API; no API is included in this repository.</p>
+          <label class="field">Optional API base URL
+            <input type="url" id="apiBase" placeholder="https://your-api.example" value="${esc(base)}">
           </label>
           <button class="btn ghost" id="saveApi">Save</button>
         </div>
         <div class="card">
           <h3>About</h3>
-          <p>Spark maps each child's week to the Australian curriculum (EYLF, QKLG, Australian Curriculum v9) and tailors it to what your family is actually doing — bringing transparency to parenting. Your family's details are encrypted and unlocked with the family password; nothing readable is ever published.</p>
+          <p>Tailor Education maps each child's week to the Australian curriculum (EYLF, QKLG, Australian Curriculum v9) and tailors it to what your family is actually doing. Your family's details are encrypted and unlocked with the family password; nothing readable is ever published.</p>
         </div>
         <div class="card">
-          <h3>Lock Spark</h3>
-          <p>Sign out on this device. You'll need the family password to open Spark again.</p>
+          <h3>Lock Tailor Education</h3>
+          <p>Sign out on this device. You'll need the family password to open Tailor Education again.</p>
           <button class="btn ghost" id="lockBtn">Lock &amp; sign out</button>
         </div>
         <div class="card danger">
@@ -479,7 +479,7 @@
           <button class="btn danger" id="resetBtn">Reset everything</button>
         </div>
       </section>
-      <div class="foot-hint">Spark · v1 · made for family learning</div>
+      <div class="foot-hint">Tailor Education · family learning</div>
     `;
 
     document.getElementById("saveApi").onclick = () => {
@@ -625,9 +625,9 @@
     app.innerHTML = `
       <div class="lock">
         <div class="lock-card">
-          <div class="lock-brand"><span class="spark-dot"></span> Spark</div>
+          <div class="lock-brand"><span class="spark-dot"></span> Tailor Education</div>
           <h1 class="lock-h">Family sign-in</h1>
-          <p class="lock-sub">Enter the family password to open Spark.</p>
+          <p class="lock-sub">Enter the family password to open Tailor Education.</p>
           <form id="lockForm" autocomplete="off">
             <input class="lock-input" id="lockPw" type="password" inputmode="text"
               placeholder="Password" aria-label="Family password" autocomplete="current-password" />

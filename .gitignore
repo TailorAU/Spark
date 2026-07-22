@@ -1,10 +1,18 @@
-# Spark — nothing to build; PWA is static. Ignore local/editor cruft only.
+# Tailor Education — local/editor cruft and generated site output.
 .DS_Store
 node_modules/
 *.log
 .vscode/
 .idea/
 dist/
+
+# Next.js school/centre surface and generated family mount
+sites/education/.next/
+sites/education/out/
+sites/education/public/families/
+sites/education/tsconfig.tsbuildinfo
+sites/education/.env*
+!sites/education/.env.example
 
 # generated print output
 tools/*.pdf

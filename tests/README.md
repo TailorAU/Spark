@@ -1,4 +1,4 @@
-# Spark E2E suite
+# Tailor Education family PWA E2E suite
 
 Playwright end-to-end tests for the whole PWA: auth (lock/unlock/remember),
 all three children's interactive worksheets played to a perfect score, the

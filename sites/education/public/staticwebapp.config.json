@@ -1,0 +1,34 @@
+{
+    "globalHeaders": {
+        "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+        "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'"
+    },
+    "routes": [
+        {
+            "route": "/app/*",
+            "allowedRoles": ["authenticated"]
+        },
+        {
+            "route": "/.auth/login/github",
+            "statusCode": 404
+        },
+        {
+            "route": "/.auth/login/twitter",
+            "statusCode": 404
+        }
+    ],
+    "responseOverrides": {
+        "401": {
+            "redirect": "/.auth/login/aad?post_login_redirect_uri=/app/observations",
+            "statusCode": 302
+        }
+    },
+    "navigationFallback": {
+        "rewrite": "/index.html",
+        "exclude": ["/_next/*", "/images/*", "*.css", "*.js", "*.png", "*.svg", "*.ico", "*.json"]
+    }
+}

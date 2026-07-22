@@ -1,5 +1,5 @@
-/* Spark service worker — offline-first app shell. */
-const CACHE = "spark-v18";
+/* Tailor Education service worker — offline-first family app shell. */
+const CACHE = "spark-v19";
 const ASSETS = [
   "./",
   "./index.html",

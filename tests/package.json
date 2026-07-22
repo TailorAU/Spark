@@ -1,8 +1,8 @@
 {
-  "name": "spark-e2e",
+  "name": "tailor-education-family-e2e",
   "private": true,
   "type": "module",
-  "description": "Spark E2E suite (Playwright). Requires SPARK_VAULT_PW in the environment - never stored in the repo.",
+  "description": "Tailor Education family PWA E2E suite. Secret-gated tests require SPARK_VAULT_PW, which is never stored in the repo.",
   "scripts": {
     "test": "playwright test",
     "test:headed": "playwright test --headed"

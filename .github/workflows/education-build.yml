@@ -1,0 +1,45 @@
+name: Build Tailor Education
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "sites/education/**"
+      - ".github/workflows/education-build.yml"
+  pull_request:
+    paths:
+      - "app/**"
+      - "sites/education/**"
+      - ".github/workflows/education-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sites/education
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: sites/education/package-lock.json
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run check
+      - run: npm run build
+      - name: Verify unified static export
+        run: |
+          test -f out/index.html
+          test -f out/families/index.html
+          test -f out/families/manifest.webmanifest
+          test -f out/families/sw.js
+          test -f out/privacy/index.html
+          test -f out/terms/index.html
+          test -f out/app/observations/index.html
+          test ! -e out/families/CNAME

@@ -1,58 +1,88 @@
 # AGENTS.md
 
-> Onboarding for AI agents picking up work in this repo. Self-contained.
+> Onboarding for product agents working in this repository.
 
-## Product agent (delivery ownership)
+## Delivery ownership
 
-A dedicated **Spark product agent** owns this repo's delivery loop. North-star
-epic: [`#1`](https://github.com/TailorAU/Spark/issues/1) — first **$10k MRR**.
+A dedicated **Tailor Education product agent** owns delivery for this
+repository. The repository may retain its legacy Spark name until the owner
+approves a GitHub rename; public product branding is **Tailor Education** with
+the promise **“Education shaped around the individual.”**
 
-Local clone (orchestrator home): `C:\tailor_OS\Spark`.
+Local clone: `C:\tailor_OS\Spark`.
 
-| Role | Does | Does not |
-|---|---|---|
-| **Spark product agent** | Pull `ready` issues; ship the PWA; file GTM context (pricing/ICP pointers) | Draft outreach / press send; put real child PII in-repo or issues |
-| **Global orchestrator** | Shape + label; stock `ready`; drain holdings#6 | Bypass this agent for Spark product work |
-| **Owner (Knox)** | Legal privacy copy, outreach, real family data, billing decisions | — |
+The product agent may ship the family PWA and school/centre frontend, maintain
+builds and tests, and file GTM context. It must not draft outreach, press send,
+publish PII, alter DNS, rename the GitHub repository, or bypass owner approval
+for legal, billing, privacy, or security decisions.
 
-**Labels:** `requirement` · `ready` · `blocked` · `needs-human-review` · `epic`.
+Use `Refs #N` only. Never place real child or family data, credentials, tokens,
+or print artifacts in source control or issues.
 
-**Ready bar:** clear acceptance criteria; no secrets/PII (especially real children)
-in issues. **`file-don't-draft`** for all GTM. **`Refs #N` only**.
+## Product architecture
 
-## What Spark is
+Tailor Education has two frontend surfaces in one repository:
 
-**Spark** — transparency for parenting. Every week of a child's education mapped
-to the Australian framework they actually sit under, tailored to real family
-life (trips, camping, sports). Mobile-first installable PWA under `app/`.
+- `app/` — installable, offline-first family learning PWA.
+- `sites/education/` — Next.js static-export school and centre site, including
+  the existing educator observation frontend.
 
-Frameworks in v1 seed (anonymised children only in the public repo):
+`npm run build` in `sites/education/` generates one export:
 
-| Setting | Framework |
-|---|---|
-| Primary | Australian Curriculum v9 |
-| Kindergarten (C&K) | QLD Kindergarten Learning Guideline |
-| Preschool / early years | EYLF V2.0 |
+- `/` serves the schools/centres surface.
+- `/families/` serves a generated copy of the family PWA.
 
-Optional live enrichment: extracted Spark PLG engine (`/api/spark/plg-worksheet`)
-— see `EXTRACTION.md`. Built-in library works fully offline with no backend.
+The generated `sites/education/public/families/` directory is gitignored.
+`scripts/sync-families.mjs` refreshes it from `app/` before each build and must
+exclude `app/CNAME`.
+
+## Transition constraints
+
+The direct family PWA remains deployed at `spark.tailorai.au` until canonical
+domain cutover. Do not change `app/CNAME` or the existing Pages workflow in a
+way that breaks that deployment.
+
+The intended unified domain is `education.tailor.au`, but DNS, hosting
+configuration, deployment, and repository rename are human-controlled gates.
+Build-only CI must not grow a deployment step that depends on unavailable
+secrets.
+
+Public strings use Tailor Education. “Daily Spark” may remain only as a clear
+feature name. Internal `SPARK_*` globals, `spark.*` storage keys, cache naming,
+API compatibility paths, and `spark-*` CSS classes stay stable unless a
+separately approved migration includes backward compatibility.
+
+## Safe product boundary
+
+This repository owns frontend consolidation only. Do not port:
+
+- CCMS Entity Framework entities or migrations;
+- shared platform backend primitives;
+- `src/WebApi` Spark code;
+- API credentials, provider configuration, or deployment secrets;
+- sales or outreach documents.
+
+The school frontend API client and the family PWA's optional live-generation
+hook are not backend implementations. API, identity, tenancy, sync, and CCMS
+extraction are a later phase described in `EXTRACTION.md`.
 
 ## Run locally
 
+Unified site:
+
 ```bash
-cd app
-python -m http.server 8080   # or: npx serve .
-# open http://localhost:8080 → Add to Home Screen on phone
+cd sites/education
+npm ci
+npm run dev
 ```
 
-Deploy: serve `app/` statically. GH Pages workflow targets `spark.tailorai.au`.
+Family PWA directly:
 
-## Child safety
+```bash
+cd app
+python -m http.server 8080
+```
 
-Public seed children are **anonymised**. Never commit real names, DOBs, school
-identifiers, or photos. Local overrides stay on the device / owner machine.
-
-## Commercial north star
-
-First **$10k MRR** = recurring parent/family subscriptions or school seats.
-Agent files pricing + ICP pointers only; owner presses send.
+Family tests live in `tests/`. Suites that decrypt the vault require
+`SPARK_VAULT_PW` from the environment. Never hard-code it, log it, or weaken
+the privacy scan to make tests pass.

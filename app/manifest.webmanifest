@@ -1,7 +1,7 @@
 {
-  "name": "Spark — family learning",
-  "short_name": "Spark",
-  "description": "Every week of your child's education, mapped to the Australian curriculum and tailored to real family life.",
+  "name": "Tailor Education — family learning",
+  "short_name": "Tailor Education",
+  "description": "Education shaped around the individual — every week mapped to the Australian curriculum and tailored to real family life.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
