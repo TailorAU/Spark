@@ -1,0 +1,8 @@
+# Tailor Education (education.tailor.au)
+# Public school/centre pages are indexable; authenticated product surfaces are not.
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /families/
+
+Sitemap: https://education.tailor.au/sitemap.xml

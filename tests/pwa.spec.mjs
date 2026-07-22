@@ -36,8 +36,22 @@ test("service worker cache version is spark-vN", () => {
   expect(Number(m[1])).toBeGreaterThanOrEqual(9);
 });
 
-test("custom domain CNAME is intact", () => {
+test("legacy custom domain CNAME is intact", () => {
   expect(read("CNAME").trim()).toBe("spark.tailorai.au");
+});
+
+test("family app uses Tailor Education branding with subpath-safe install URLs", () => {
+  const html = read("index.html");
+  const manifest = JSON.parse(read("manifest.webmanifest"));
+  const app = read("js/app.js");
+
+  expect(html).toContain("<title>Tailor Education — family learning</title>");
+  expect(html).toContain('href="./manifest.webmanifest"');
+  expect(manifest.name).toBe("Tailor Education — family learning");
+  expect(manifest.short_name).toBe("Tailor Education");
+  expect(manifest.start_url).toBe(".");
+  expect(manifest.scope).toBe(".");
+  expect(app).toContain('navigator.serviceWorker.register("./sw.js")');
 });
 
 test("all app scripts stay vanilla - no external CDNs or imports", () => {

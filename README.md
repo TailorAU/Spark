@@ -1,98 +1,110 @@
 <p align="center">
-  <img src="app/icons/icon.svg" width="96" alt="Spark" />
+  <img src="app/icons/icon.svg" width="96" alt="Tailor Education" />
 </p>
 
-<h1 align="center">Spark</h1>
+<h1 align="center">Tailor Education</h1>
 
-<p align="center"><b>Bringing transparency to parenting — every week of your child's education mapped to the Australian curriculum, tailored to what your family is actually doing.</b></p>
+<p align="center"><b>Education shaped around the individual.</b></p>
 
----
+Tailor Education is one product with two source-controlled public surfaces:
 
-Spark is a **mobile-first, installable app** for parents. For each child it maps
-the school year, week by week, against the framework they actually sit under —
-then **weaves in real life**: you just got back from Fiji, you're camping this
-weekend with schoolmates, there's a cross-country race coming up. Spark turns
-those into the week's learning, on-curriculum, so learning rides along with the
-life you're already living.
+- `sites/education/` is the Next.js static-export site for schools and early
+  learning centres. It owns the public landing, privacy and terms pages, plus
+  the existing educator observation frontend.
+- `app/` is the mobile-first family learning PWA. It maps each learner's week
+  to the relevant Australian framework and tailors activities to family life.
 
-Built first for one family and designed to open up to other parents. The seed
-children in this public repo are **anonymised** — swap in your own locally.
+The education site build mounts the family PWA at `/families/`, producing one
+static export intended for `https://education.tailor.au`. The existing direct
+PWA deployment at `https://spark.tailorai.au` remains live during transition:
+`app/CNAME` and the GitHub Pages deployment workflow are intentionally
+unchanged until a human-approved domain cutover.
 
-## The kids (v1 seed — anonymised)
+## Product surfaces
 
-| Child | Setting | Stage (2026) | Framework |
-|---|---|---|---|
-| 🏃 **Eldest** | Primary school | **Year 1** | Australian Curriculum v9 |
-| 🌻 **Middle** | Kindergarten (C&K) | **Kindergarten** | QLD Kindergarten Learning Guideline |
-| 🌸 **Youngest** | Preschool | **Early years** | EYLF V2.0 |
+### Schools and centres
 
-*(Ages/year levels derive from Queensland enrolment cut-offs. Names and exact dates are anonymised for this public repo.)*
+The root site keeps the school/centre story: educator-reviewed observation
+drafts, curriculum mapping, family updates, leadership visibility, and the
+existing privacy and terms copy. Public branding is Tailor Education. “Daily
+Spark” remains only as the name of a family-update feature.
 
-## What it does
+### Families
 
-- **Weekly curriculum map** — each child's week gets a focus per learning area
-  (English, Maths, Science… for the eldest; the five EYLF/QKLG outcomes for the
-  little ones), rotating across the strands so the whole year is covered.
-- **Life-event tailoring** — turn on *"just back from Fiji"*, *"camping this
-  weekend"*, *"cross-country training"* and Spark rewrites the week's activities
-  to use them, while staying on-curriculum. A tailored activity is badged with
-  what it's tied to.
-- **Cross-country training plan** — a safe, play-based 6-week build-up for
-  the eldest, counting down to race day.
-- **Progress tracking** — tick off each area; per-child weekly progress rings.
-- **Full-year map** — every week ahead, per child, against their framework.
-- **Works offline, installs to the home screen** — it's a PWA. No app store needed.
-- **Optional live enrichment** — point it at the extracted Spark PLG engine
-  (`/api/spark/plg-worksheet`) to swap in fresh, LLM-generated, child-safety-
-  moderated activities. Fully optional; the built-in library needs no backend.
+The PWA under `app/` works offline and can be installed to a home screen. It
+contains the curriculum map, life-context tailoring, progress tracking,
+learning journey, interactive worksheets, and printable packs. Public labels
+use Tailor Education; existing `SPARK_*` JavaScript globals, storage keys, API
+route compatibility, and the legacy CNAME remain stable for existing users.
 
-## Run it
+Public seed records are anonymised. Never commit real names, dates of birth,
+school identifiers, family passwords, or generated print packs.
 
-It's a static PWA — no build step.
+## Build the unified export
+
+```bash
+cd sites/education
+npm ci
+npm run build
+```
+
+`prebuild` runs `scripts/sync-families.mjs`, which refreshes
+`public/families/` from the repository's root `app/` directory. The generated
+directory is gitignored. `app/CNAME` is deliberately excluded so the unified
+export cannot claim the legacy Spark domain.
+
+The export is written to:
+
+```text
+sites/education/out/
+├── index.html
+├── privacy.html
+├── terms.html
+└── families/
+    ├── index.html
+    ├── manifest.webmanifest
+    └── sw.js
+```
+
+For direct family-PWA development, serve `app/` as static files:
 
 ```bash
 cd app
-python3 -m http.server 8080     # or: npx serve .
-# open http://localhost:8080
+python -m http.server 8080
 ```
 
-On a phone, open that URL and choose **Add to Home Screen** → it runs full-screen, offline.
+## Repository layout
 
-Deploy anywhere static (GitHub Pages, Netlify, Azure Static Web Apps, Cloudflare Pages) — just serve `app/`.
-
-## Layout
-
-```
+```text
 .
-├── app/                    # the installable PWA (this is the product)
-│   ├── index.html
-│   ├── styles.css · manifest.webmanifest · sw.js · CNAME
-│   ├── icons/
-│   └── js/
-│       ├── data.js         # kids, curriculum frameworks, life-context library
-│       ├── engine.js       # week/curriculum mapping + tailoring engine
-│       ├── store.js        # localStorage state + progress
-│       └── app.js          # UI / views / navigation
+├── app/                              # family PWA; legacy direct deployment
+├── sites/education/                  # school/centre Next.js site
+│   ├── scripts/sync-families.mjs     # deterministic family-asset refresh
+│   └── src/
+├── tests/                            # family PWA Playwright tests
 ├── .github/workflows/
-│   └── pages.yml           # deploys app/ to GitHub Pages (spark.tailorai.au)
-└── README.md
+│   ├── education-build.yml           # build-only CI for the unified export
+│   ├── pages.yml                     # legacy app/ deployment; keep during cutover
+│   └── nightly-print.yml
+└── EXTRACTION.md                     # later API/CCMS phase boundary
 ```
 
-## Status & roadmap
+## Backend boundary
 
-**v1 (this):** single-family, offline PWA, three frameworks, life-event
-tailoring, cross-country plan, progress tracking.
+There is no extracted API, CCMS entity model, or shared platform backend in
+this repository. The educator frontend's `src/lib/api.ts` is a client adapter,
+and the family PWA has an optional compatibility hook for live activity
+generation; neither is a backend implementation.
 
-**Next, to open it to other parents:**
-1. Accounts + multiple families (the model already keys everything by child).
-2. Add-your-own-child onboarding (school, DOB → auto-stage/framework).
-3. Custom life events (birthdays, carnivals, term breaks, trips) beyond the seed set.
-4. Wire live PLG enrichment on by default; expand `plg-play` for the early-years kids.
-5. Push notifications for the week's plan + training days.
-6. Backend for sync across devices.
+API, identity, tenancy, sync, and any CCMS migration are a later phase with
+separate architecture, privacy, and security approval. See `EXTRACTION.md`.
 
-## Provenance
+## Verification
 
-Spark started inside a private monorepo. The reusable engine (curriculum-mapped,
-interest-tailored activity generation) was built there first; this repo is the
-standalone, parent-facing app.
+The standalone education build is secret-free. Family tests that exercise the
+encrypted vault require `SPARK_VAULT_PW`; privacy and security coverage must
+not be weakened or supplied with a committed password.
+
+Domain cutover, deployment of the unified export, DNS changes, and any GitHub
+repository rename are owner-controlled operations and are not performed by
+this repository build.

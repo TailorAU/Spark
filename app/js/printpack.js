@@ -243,7 +243,7 @@
 
   function head(child, dateLabel, themeLabel) {
     return `<div class="pp-head">
-      <div class="pp-brand"><span class="pp-dot"></span> Spark</div>
+      <div class="pp-brand"><span class="pp-dot"></span> Tailor Education</div>
       <div class="pp-title">${esc(child.name)}'s worksheet</div>
       <div class="pp-meta">${esc(dateLabel)} · ${esc(themeLabel)} · ${esc(child.schoolType || "")}</div>
       <div class="pp-namedate"><span>Name: <i>${esc(child.name)}</i></span><span>Date: ______________</span></div>
@@ -340,7 +340,7 @@
       ${sec("Maths — write the answers in the boxes", `<div class="pp-sumgrid">${sums.join("")}</div>${mathsLine}`)}
       ${extra}
       ${puzzle.html}
-      <div class="pp-foot">Spark · tailored for ${esc(child.name)} · ${esc(dateLabel)}</div>
+      <div class="pp-foot">Tailor Education · tailored for ${esc(child.name)} · ${esc(dateLabel)}</div>
     </div>`;
     return { html, answers };
   }
@@ -416,7 +416,7 @@
       ${numSec}
       ${langSec}
       ${puzzle.html}
-      <div class="pp-foot">Spark · tailored for ${esc(child.name)} · ${esc(dateLabel)}</div>
+      <div class="pp-foot">Tailor Education · tailored for ${esc(child.name)} · ${esc(dateLabel)}</div>
     </div>`;
     return { html, answers };
   }
@@ -462,7 +462,7 @@
       ${sec(`The letter ${initial} — trace it big!`, `<div class="pp-biginitial">${initial}</div>`)}
       ${sec(togetherTitle, dots)}
       ${funSec}
-      <div class="pp-foot">Spark · tailored for ${esc(child.name)} · ${esc(dateLabel)}</div>
+      <div class="pp-foot">Tailor Education · tailored for ${esc(child.name)} · ${esc(dateLabel)}</div>
     </div>`;
     return { html, answers };
   }
@@ -486,13 +486,13 @@
   function answerKeyPage(entries, dateLabel) {
     return `<div class="pp-page pp-keypage">
       <div class="pp-head">
-        <div class="pp-brand"><span class="pp-dot"></span> Spark</div>
+        <div class="pp-brand"><span class="pp-dot"></span> Tailor Education</div>
         <div class="pp-title">For grown-ups — today's answers</div>
         <div class="pp-meta">${esc(dateLabel)} · a quick check-list for marking together</div>
       </div>
       <div class="pp-keynote">Keep this page for yourself. The maths and puzzle answers are below; the handwriting, drawing and colouring are all “great effort” by default.</div>
       ${entries.map(keyBlock).join("")}
-      <div class="pp-foot">Spark · answer key · ${esc(dateLabel)}</div>
+      <div class="pp-foot">Tailor Education · answer key · ${esc(dateLabel)}</div>
     </div>`;
   }
 
@@ -502,7 +502,7 @@
     return `<div class="pp-page">
       ${head({ name: safeName(child), stage: "", schoolType: "" }, dateLabel, "Home adventure")}
       ${sec("Today's sheet", `<div class="pp-prompt">We couldn't build today's activities for this page. Grab a pencil and draw your favourite thing about today!</div>` + hwLines(3))}
-      <div class="pp-foot">Spark · ${esc(dateLabel)}</div>
+      <div class="pp-foot">Tailor Education · ${esc(dateLabel)}</div>
     </div>`;
   }
 

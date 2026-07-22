@@ -1,80 +1,46 @@
-# Making Spark its own repo
+# API and CCMS extraction — later phase
 
-This folder was built inside `TailorAU/tailor-app` (on branch
-`claude/kids-education-tracking-app-xi9a9z`) because the GitHub App available to
-the agent session **could not create a new repository** (`403 Resource not
-accessible by integration` against both `TailorAU` and `Tailor-AUS`). Everything
-here is **self-contained** — nothing under `spark/` imports from the rest of the
-monorepo at runtime (the PWA is pure static assets; the `extracted/` `.cs` files
-are reference copies).
+Tailor Education's first consolidation is frontend-only. This repository
+currently contains:
 
-So the moment an empty `spark` repo exists, this lifts straight out.
+- the offline family PWA in `app/`;
+- the school/centre Next.js frontend in `sites/education/`;
+- a browser API client in `sites/education/src/lib/api.ts`; and
+- an optional family-PWA compatibility hook for live activity generation.
 
-## Option A — you create the empty repo, then lift the subtree (keeps history)
+It does **not** contain an extracted backend, CCMS Entity Framework entities,
+shared platform primitives, `src/WebApi` Spark code, database migrations, or a
+deployable API. Earlier extraction notes that referred to
+`extracted/backend/*.cs` are obsolete; those files are absent by design.
 
-```bash
-# 1. Create an empty repo in GitHub UI: TailorAU/spark (or Tailor-AUS/spark).
-#    Do NOT initialise it with a README.
+## Current behaviour
 
-# 2. From a full clone of tailor-app, split spark/ into its own history:
-git clone https://github.com/TailorAU/tailor-app.git
-cd tailor-app
-git checkout claude/kids-education-tracking-app-xi9a9z
+The family PWA is complete enough to run offline from its built-in curriculum
+and activity library. Existing `SPARK_*` browser globals, `spark.*` storage
+keys, and `/api/spark/plg-worksheet` compatibility remain unchanged so the
+branding consolidation does not break existing devices or an independently
+configured service.
 
-# Split just the spark/ directory into a new branch whose root IS spark/
-git subtree split --prefix=spark -b spark-only
+The school/centre observation pages expect an external Education API through
+`NEXT_PUBLIC_API_URL`. Copying that frontend into this repository does not
+claim that the API exists or deploy it.
 
-# 3. Push that branch as the new repo's main
-git push https://github.com/TailorAU/spark.git spark-only:main
-```
+## Later-phase decisions
 
-`git subtree split` rewrites so the new repo's root contains `app/`,
-`extracted/`, `README.md`, etc. directly (no `spark/` wrapper), with the commits
-that touched those files preserved.
+Before any backend code is added, the owner must approve:
 
-## Option B — clean snapshot (no history)
+1. The family and school/centre data boundaries, including whether they share
+   an API or remain separate services.
+2. Identity, tenancy, consent, authorisation, audit, retention, and Australian
+   data-residency requirements.
+3. A standalone data model. Do not mechanically copy CCMS EF aggregates,
+   tenant filters, value objects, or migrations into this repository.
+4. Child-safety and privacy review for audio, observations, family records,
+   model providers, moderation, and data deletion.
+5. Hosting, secret management, operational ownership, and domain/API routing.
+6. A migration plan that preserves current offline behaviour and the legacy
+   `spark.tailorai.au` PWA until cutover is verified.
 
-```bash
-# From this branch's checkout:
-cp -r spark /tmp/spark-repo && cd /tmp/spark-repo
-git init -b main
-git add -A
-git commit -m "Spark v1 — family learning PWA + extracted Spark backend"
-git remote add origin https://github.com/TailorAU/spark.git
-git push -u origin main
-```
-
-## Option C — let the agent do it
-
-Grant the Claude GitHub App **repository-creation** permission (or pre-create the
-empty `spark` repo and add it to the session with `add_repo`). Then the agent can
-`create_repository` + `push_files` and this whole tree lands in the new repo in
-one commit.
-
----
-
-## Decoupling the extracted .NET backend (later, only if you want server sync)
-
-The PWA needs **no backend** — it's the product as-is. You only need the backend
-if you want cross-device sync or the live LLM activity generation always-on.
-
-The `extracted/backend/*.cs` files still depend on monorepo primitives. To make
-them compile standalone:
-
-1. **New minimal .NET 9 WebAPI project** in `spark` (e.g. `src/Spark.Api/`).
-2. **Drop the CCMS entities' monorepo coupling** — `SparkChild` /
-   `SparkObservation` / `SparkSchool` inherit `AggregateRoot<TId>` and carry
-   `TenantId` + a global EF query filter. For a single-family app you can either:
-   - keep tenancy (one tenant = one family) and port `AggregateRoot`, `TenantId`,
-     and the Vogen setup across, or
-   - replace them with plain POCO entities + a `FamilyId`.
-3. **Port the PLG engine** — `SparkEndpoints.cs` is the valuable part. Its only
-   real dependencies are `ILlmClient` (swap for a thin OpenAI/Anthropic client),
-   `IMemoryCache` (built-in), and `IContentModerationService` (keep — child
-   safety matters). The prompts + JSON schemas are self-contained in the file.
-4. **Config** — the moderation service needs Azure AI Content Safety keys; the
-   LLM client needs a provider key. Both from env/user-secrets, never committed.
-
-Until then, the PWA's built-in activity library covers every framework offline,
-and `More → Live activity generation` can point at the **existing** deployed
-`spark.tailor.au` PLG endpoints for enrichment without any new backend at all.
+Until those gates are cleared, keep this repository static-exportable and
+secret-free. API/CCMS extraction must be a separate, reviewable phase rather
+than an implicit dependency of the Tailor Education brand consolidation.
